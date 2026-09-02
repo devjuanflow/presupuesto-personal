@@ -493,7 +493,7 @@ export default function App() {
             </select>
           </div>
 
-          {/* Tarjetas de Resumen Interactivas */}
+          {/* Tarjetas de Resumen Interactivas (Clickeables) */}
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-6">
             <div 
               onClick={() => setModalType('Ingresos')}
@@ -919,22 +919,26 @@ export default function App() {
             <h2 className="text-md font-bold text-gray-800 mb-1">Recopilación y Balance Anual ({budgetDate})</h2>
             <p className="text-xs text-gray-500 mb-4">Revisa el comportamiento mes a mes para identificar en qué periodos tuviste mayores gastos y qué puedes mejorar.</p>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 my-4">
               <div className="bg-green-50 p-3 rounded-lg text-center border border-green-100">
-                <p className="text-[10px] text-gray-500 uppercase font-bold">Total Ingresos Anual</p>
-                <p className="text-sm sm:text-base font-bold text-green-600 mt-1">{formatCOP(grandAnnualIncome)}</p>
+                <p className="text-[10px] text-gray-500 uppercase font-bold">Ingresos</p>
+                <p className="text-xs sm:text-sm font-bold text-green-600 mt-1">{formatCOP(grandAnnualIncome)}</p>
               </div>
               <div className="bg-red-50 p-3 rounded-lg text-center border border-red-100">
-                <p className="text-[10px] text-gray-500 uppercase font-bold">Total Gastos Anual</p>
-                <p className="text-sm sm:text-base font-bold text-red-600 mt-1">{formatCOP(grandAnnualExpense)}</p>
+                <p className="text-[10px] text-gray-500 uppercase font-bold">Gastos</p>
+                <p className="text-xs sm:text-sm font-bold text-red-600 mt-1">{formatCOP(grandAnnualExpense)}</p>
               </div>
               <div className="bg-emerald-50 p-3 rounded-lg text-center border border-emerald-100">
-                <p className="text-[10px] text-gray-500 uppercase font-bold">Total Ahorros Anual</p>
-                <p className="text-sm sm:text-base font-bold text-emerald-600 mt-1">{formatCOP(grandAnnualSavings)}</p>
+                <p className="text-[10px] text-gray-500 uppercase font-bold">Ahorros</p>
+                <p className="text-xs sm:text-sm font-bold text-emerald-600 mt-1">{formatCOP(grandAnnualSavings)}</p>
               </div>
-              <div className="bg-blue-50 p-3 rounded-lg text-center border border-blue-100">
-                <p className="text-[10px] text-gray-500 uppercase font-bold">Balance Neto Anual</p>
-                <p className={`text-sm sm:text-base font-bold mt-1 ${grandAnnualNet >= 0 ? 'text-blue-600' : 'text-red-600'}`}>{formatCOP(grandAnnualNet)}</p>
+              <div className="bg-orange-50 p-3 rounded-lg text-center border border-orange-100">
+                <p className="text-[10px] text-gray-500 uppercase font-bold">Deudas Anual</p>
+                <p className="text-xs sm:text-sm font-bold text-orange-600 mt-1">{formatCOP(grandAnnualDebts)}</p>
+              </div>
+              <div className="bg-blue-50 p-3 rounded-lg text-center border border-blue-100 col-span-2 sm:col-span-1">
+                <p className="text-[10px] text-gray-500 uppercase font-bold">Neto Anual</p>
+                <p className={`text-xs sm:text-sm font-bold mt-1 ${grandAnnualNet >= 0 ? 'text-blue-600' : 'text-red-600'}`}>{formatCOP(grandAnnualNet)}</p>
               </div>
             </div>
           </div>
