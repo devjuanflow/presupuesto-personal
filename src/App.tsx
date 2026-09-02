@@ -42,7 +42,7 @@ const CATEGORIES = [
   { name: 'Gasolina / Transporte', type: 'expense' },
   { name: 'Celular financiado', type: 'expense' },
   { name: 'Estudio', type: 'expense' },
-  { name: 'Suscripciones', type: 'expense' }, // Las suscripciones operan como deudas recurrentes
+  { name: 'Suscripciones', type: 'expense' },
   { name: 'Facturas (Servicios)', type: 'expense' },
   { name: 'Alimentos / Mercado', type: 'expense' },
   { name: 'Deudas / Préstamos', type: 'expense' },
@@ -60,7 +60,7 @@ type DetailModalType = 'Ingresos' | 'Gastos' | 'Ahorros' | 'Deudas Mes' | null;
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<'budget' | 'savings' | 'debts' | 'annual'>('budget');
-  const [budgetName, setBudgetName] = useState(() => localStorage.getItem('budget_name') || 'Mi Presupuesto Personal');
+  const [budgetName, setBudgetName] = useState(() => localStorage.getItem('budget_name') || 'Mi Presupuesto');
   const [budgetDate, setBudgetDate] = useState(() => localStorage.getItem('budget_date') || '2026');
   const [currentMonth, setCurrentMonth] = useState('Septiembre');
   
@@ -111,25 +111,11 @@ export default function App() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    localStorage.setItem('presupuesto_personal_local', JSON.stringify(txs));
-  }, [txs]);
-
-  useEffect(() => {
-    localStorage.setItem('savings_goals_local', JSON.stringify(goals));
-  }, [goals]);
-
-  useEffect(() => {
-    localStorage.setItem('debts_local', JSON.stringify(debts));
-  }, [debts]);
-
-  useEffect(() => {
-    localStorage.setItem('budget_name', budgetName);
-  }, [budgetName]);
-
-  useEffect(() => {
-    localStorage.setItem('budget_date', budgetDate);
-  }, [budgetDate]);
+  useEffect(() => { localStorage.setItem('presupuesto_personal_local', JSON.stringify(txs)); }, [txs]);
+  useEffect(() => { localStorage.setItem('savings_goals_local', JSON.stringify(goals)); }, [goals]);
+  useEffect(() => { localStorage.setItem('debts_local', JSON.stringify(debts)); }, [debts]);
+  useEffect(() => { localStorage.setItem('budget_name', budgetName); }, [budgetName]);
+  useEffect(() => { localStorage.setItem('budget_date', budgetDate); }, [budgetDate]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -138,52 +124,25 @@ export default function App() {
 
     if (editingId) {
       setTxs(txs.map(t => t.id === editingId ? {
-        ...t,
-        month: currentMonth,
-        category: selectedCat.name,
-        type: selectedCat.type as 'income' | 'expense',
-        desc: desc || selectedCat.name,
-        amount: cleanAmount,
+        ...t, month: currentMonth, category: selectedCat.name, type: selectedCat.type as 'income' | 'expense', desc: desc || selectedCat.name, amount: cleanAmount,
       } : t));
       setEditingId(null);
     } else {
-      setTxs([
-        {
-          id: Date.now().toString(),
-          month: currentMonth,
-          category: selectedCat.name,
-          type: selectedCat.type as 'income' | 'expense',
-          desc: desc || selectedCat.name,
-          amount: cleanAmount,
-        },
-        ...txs,
-      ]);
+      setTxs([{ id: Date.now().toString(), month: currentMonth, category: selectedCat.name, type: selectedCat.type as 'income' | 'expense', desc: desc || selectedCat.name, amount: cleanAmount }, ...txs]);
     }
-
-    setDesc('');
-    setAmount('');
-    setSelectedCat(CATEGORIES[0]);
+    setDesc(''); setAmount(''); setSelectedCat(CATEGORIES[0]);
   };
 
   const startEdit = (t: Transaction) => {
     setEditingId(t.id);
     setCurrentMonth(t.month);
-    const cat = CATEGORIES.find(c => c.name === t.category) || CATEGORIES[0];
-    setSelectedCat(cat);
+    setSelectedCat(CATEGORIES.find(c => c.name === t.category) || CATEGORIES[0]);
     setDesc(t.desc);
     setAmount(t.amount.toString());
   };
 
-  const cancelEdit = () => {
-    setEditingId(null);
-    setDesc('');
-    setAmount('');
-  };
-
-  const deleteTx = (id: string) => {
-    if (editingId === id) cancelEdit();
-    setTxs(txs.filter(t => t.id !== id));
-  };
+  const cancelEdit = () => { setEditingId(null); setDesc(''); setAmount(''); };
+  const deleteTx = (id: string) => { if (editingId === id) cancelEdit(); setTxs(txs.filter(t => t.id !== id)); };
 
   const handleGoalSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -192,25 +151,12 @@ export default function App() {
     if (!newGoalName || isNaN(target) || target <= 0) return;
 
     if (editingGoalId) {
-      setGoals(goals.map(g => g.id === editingGoalId ? {
-        ...g,
-        name: newGoalName,
-        targetAmount: target,
-        currentAmount: isNaN(current) ? 0 : current
-      } : g));
+      setGoals(goals.map(g => g.id === editingGoalId ? { ...g, name: newGoalName, targetAmount: target, currentAmount: isNaN(current) ? 0 : current } : g));
       setEditingGoalId(null);
     } else {
-      setGoals([...goals, { 
-        id: Date.now().toString(), 
-        name: newGoalName, 
-        targetAmount: target, 
-        currentAmount: isNaN(current) ? 0 : current 
-      }]);
+      setGoals([...goals, { id: Date.now().toString(), name: newGoalName, targetAmount: target, currentAmount: isNaN(current) ? 0 : current }]);
     }
-
-    setNewGoalName('');
-    setNewGoalTarget('');
-    setNewGoalCurrent('');
+    setNewGoalName(''); setNewGoalTarget(''); setNewGoalCurrent('');
   };
 
   const startEditGoal = (goal: Goal) => {
@@ -219,18 +165,8 @@ export default function App() {
     setNewGoalTarget(goal.targetAmount.toString());
     setNewGoalCurrent(goal.currentAmount.toString());
   };
-
-  const cancelGoalEdit = () => {
-    setEditingGoalId(null);
-    setNewGoalName('');
-    setNewGoalTarget('');
-    setNewGoalCurrent('');
-  };
-
-  const deleteGoal = (id: string) => {
-    if (editingGoalId === id) cancelGoalEdit();
-    setGoals(goals.filter(g => g.id !== id));
-  };
+  const cancelGoalEdit = () => { setEditingGoalId(null); setNewGoalName(''); setNewGoalTarget(''); setNewGoalCurrent(''); };
+  const deleteGoal = (id: string) => { if (editingGoalId === id) cancelGoalEdit(); setGoals(goals.filter(g => g.id !== id)); };
 
   const handleDebtSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -241,37 +177,12 @@ export default function App() {
     if (!newDebtName || isNaN(total) || total <= 0) return;
 
     if (editingDebtId) {
-      setDebts(debts.map(d => d.id === editingDebtId ? {
-        ...d,
-        name: newDebtName,
-        totalAmount: total,
-        paidAmount: isNaN(paid) ? 0 : paid,
-        monthlyPayment: isNaN(monthly) ? 0 : monthly,
-        totalInstallments: newDebtTotalInst,
-        paidInstallments: newDebtPaidInst,
-        dueDate: newDebtDueDate
-      } : d));
+      setDebts(debts.map(d => d.id === editingDebtId ? { ...d, name: newDebtName, totalAmount: total, paidAmount: isNaN(paid) ? 0 : paid, monthlyPayment: isNaN(monthly) ? 0 : monthly, totalInstallments: newDebtTotalInst, paidInstallments: newDebtPaidInst, dueDate: newDebtDueDate } : d));
       setEditingDebtId(null);
     } else {
-      setDebts([...debts, {
-        id: Date.now().toString(),
-        name: newDebtName,
-        totalAmount: total,
-        paidAmount: isNaN(paid) ? 0 : paid,
-        monthlyPayment: isNaN(monthly) ? 0 : monthly,
-        totalInstallments: newDebtTotalInst,
-        paidInstallments: newDebtPaidInst,
-        dueDate: newDebtDueDate
-      }]);
+      setDebts([...debts, { id: Date.now().toString(), name: newDebtName, totalAmount: total, paidAmount: isNaN(paid) ? 0 : paid, monthlyPayment: isNaN(monthly) ? 0 : monthly, totalInstallments: newDebtTotalInst, paidInstallments: newDebtPaidInst, dueDate: newDebtDueDate }]);
     }
-
-    setNewDebtName('');
-    setNewDebtTotal('');
-    setNewDebtPaid('');
-    setNewDebtMonthly('');
-    setNewDebtTotalInst(12);
-    setNewDebtPaidInst(0);
-    setNewDebtDueDate(DUE_DATE_OPTIONS[3]);
+    setNewDebtName(''); setNewDebtTotal(''); setNewDebtPaid(''); setNewDebtMonthly(''); setNewDebtTotalInst(12); setNewDebtPaidInst(0); setNewDebtDueDate(DUE_DATE_OPTIONS[3]);
   };
 
   const startEditDebt = (debt: Debt) => {
@@ -284,22 +195,8 @@ export default function App() {
     setNewDebtPaidInst(debt.paidInstallments);
     setNewDebtDueDate(debt.dueDate);
   };
-
-  const cancelDebtEdit = () => {
-    setEditingDebtId(null);
-    setNewDebtName('');
-    setNewDebtTotal('');
-    setNewDebtPaid('');
-    setNewDebtMonthly('');
-    setNewDebtTotalInst(12);
-    setNewDebtPaidInst(0);
-    setNewDebtDueDate(DUE_DATE_OPTIONS[3]);
-  };
-
-  const deleteDebt = (id: string) => {
-    if (editingDebtId === id) cancelDebtEdit();
-    setDebts(debts.filter(d => d.id !== id));
-  };
+  const cancelDebtEdit = () => { setEditingDebtId(null); setNewDebtName(''); setNewDebtTotal(''); setNewDebtPaid(''); setNewDebtMonthly(''); setNewDebtTotalInst(12); setNewDebtPaidInst(0); setNewDebtDueDate(DUE_DATE_OPTIONS[3]); };
+  const deleteDebt = (id: string) => { if (editingDebtId === id) cancelDebtEdit(); setDebts(debts.filter(d => d.id !== id)); };
 
   const exportData = () => {
     const backup = { budgetName, budgetDate, txs, goals, debts };
@@ -328,78 +225,44 @@ export default function App() {
             if (parsedData.budgetName) setBudgetName(parsedData.budgetName);
             if (parsedData.budgetDate) setBudgetDate(parsedData.budgetDate);
           }
-          alert('¡Datos cargados y restaurados con éxito!');
-        } catch {
-          alert('Error al leer el archivo.');
-        }
+          alert('¡Datos cargados con éxito!');
+        } catch { alert('Error al leer el archivo.'); }
       };
     }
   };
 
-  const formatCOP = (val: number) => {
-    return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(val);
-  };
+  const formatCOP = (val: number) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(val);
 
-  // Cálculos de presupuesto del mes seleccionado
   const monthTxs = txs.filter(t => t.month === currentMonth);
   const totalIncome = monthTxs.filter(t => t.type === 'income').reduce((acc, t) => acc + t.amount, 0);
-  
-  const totalGastosMes = monthTxs
-    .filter(t => t.type === 'expense' && t.category !== 'Ahorro' && t.category !== 'Fondo de emergencia' && t.category !== 'Suscripciones' && !t.category.includes('Deudas') && !t.category.includes('financiad'))
-    .reduce((acc, t) => acc + t.amount, 0);
-
-  const totalAhorrosMes = monthTxs
-    .filter(t => t.type === 'expense' && (t.category === 'Ahorro' || t.category === 'Fondo de emergencia'))
-    .reduce((acc, t) => acc + t.amount, 0);
-
-  const totalDeudasMes = monthTxs
-    .filter(t => t.type === 'expense' && (t.category === 'Suscripciones' || t.category.includes('Deudas') || t.category.includes('financiad')))
-    .reduce((acc, t) => acc + t.amount, 0);
-
+  const totalGastosMes = monthTxs.filter(t => t.type === 'expense' && t.category !== 'Ahorro' && t.category !== 'Fondo de emergencia' && t.category !== 'Suscripciones' && !t.category.includes('Deudas') && !t.category.includes('financiad')).reduce((acc, t) => acc + t.amount, 0);
+  const totalAhorrosMes = monthTxs.filter(t => t.type === 'expense' && (t.category === 'Ahorro' || t.category === 'Fondo de emergencia')).reduce((acc, t) => acc + t.amount, 0);
+  const totalDeudasMes = monthTxs.filter(t => t.type === 'expense' && (t.category === 'Suscripciones' || t.category.includes('Deudas') || t.category.includes('financiad'))).reduce((acc, t) => acc + t.amount, 0);
   const totalExpense = totalGastosMes + totalAhorrosMes + totalDeudasMes;
   const balance = totalIncome - totalExpense;
   const porcentajeAFavor = totalIncome > 0 ? Math.max(0, (balance / totalIncome) * 100) : 0;
 
-  // Filtrador para el modal de detalles
   const getModalTransactions = () => {
-    if (modalType === 'Ingresos') {
-      return monthTxs.filter(t => t.type === 'income');
-    }
-    if (modalType === 'Gastos') {
-      return monthTxs.filter(t => t.type === 'expense' && t.category !== 'Ahorro' && t.category !== 'Fondo de emergencia' && t.category !== 'Suscripciones' && !t.category.includes('Deudas') && !t.category.includes('financiad'));
-    }
-    if (modalType === 'Ahorros') {
-      return monthTxs.filter(t => t.type === 'expense' && (t.category === 'Ahorro' || t.category === 'Fondo de emergencia'));
-    }
-    if (modalType === 'Deudas Mes') {
-      return monthTxs.filter(t => t.type === 'expense' && (t.category === 'Suscripciones' || t.category.includes('Deudas') || t.category.includes('financiad')));
-    }
+    if (modalType === 'Ingresos') return monthTxs.filter(t => t.type === 'income');
+    if (modalType === 'Gastos') return monthTxs.filter(t => t.type === 'expense' && t.category !== 'Ahorro' && t.category !== 'Fondo de emergencia' && t.category !== 'Suscripciones' && !t.category.includes('Deudas') && !t.category.includes('financiad'));
+    if (modalType === 'Ahorros') return monthTxs.filter(t => t.type === 'expense' && (t.category === 'Ahorro' || t.category === 'Fondo de emergencia'));
+    if (modalType === 'Deudas Mes') return monthTxs.filter(t => t.type === 'expense' && (t.category === 'Suscripciones' || t.category.includes('Deudas') || t.category.includes('financiad')));
     return [];
   };
 
-  // Cálculos históricos
   const totalHistoricoAhorros = txs.filter(t => t.category === 'Ahorro').reduce((acc, t) => acc + t.amount, 0);
   const totalHistoricoEmergencia = txs.filter(t => t.category === 'Fondo de emergencia').reduce((acc, t) => acc + t.amount, 0);
   const totalDeudaReal = debts.reduce((acc, d) => acc + d.totalAmount, 0);
   const totalPagadoDeudas = debts.reduce((acc, d) => acc + d.paidAmount, 0);
   const totalPendienteDeudas = totalDeudaReal - totalPagadoDeudas;
 
-  // Datos para el Resumen Anual
   const annualSummary = MONTHS.map(m => {
     const mItems = txs.filter(t => t.month === m);
     const inc = mItems.filter(t => t.type === 'income').reduce((acc, t) => acc + t.amount, 0);
-    const exp = mItems
-      .filter(t => t.type === 'expense' && t.category !== 'Ahorro' && t.category !== 'Fondo de emergencia' && t.category !== 'Suscripciones' && !t.category.includes('Deudas') && !t.category.includes('financiad'))
-      .reduce((acc, t) => acc + t.amount, 0);
-    const sav = mItems
-      .filter(t => t.type === 'expense' && (t.category === 'Ahorro' || t.category === 'Fondo de emergencia'))
-      .reduce((acc, t) => acc + t.amount, 0);
-    const deb = mItems
-      .filter(t => t.type === 'expense' && (t.category === 'Suscripciones' || t.category.includes('Deudas') || t.category.includes('financiad')))
-      .reduce((acc, t) => acc + t.amount, 0);
-    const totalOut = exp + sav + deb;
-    const net = inc - totalOut;
-    return { month: m, income: inc, expense: exp, savings: sav, debts: deb, net };
+    const exp = mItems.filter(t => t.type === 'expense' && t.category !== 'Ahorro' && t.category !== 'Fondo de emergencia' && t.category !== 'Suscripciones' && !t.category.includes('Deudas') && !t.category.includes('financiad')).reduce((acc, t) => acc + t.amount, 0);
+    const sav = mItems.filter(t => t.type === 'expense' && (t.category === 'Ahorro' || t.category === 'Fondo de emergencia')).reduce((acc, t) => acc + t.amount, 0);
+    const deb = mItems.filter(t => t.type === 'expense' && (t.category === 'Suscripciones' || t.category.includes('Deudas') || t.category.includes('financiad'))).reduce((acc, t) => acc + t.amount, 0);
+    return { month: m, income: inc, expense: exp, savings: sav, debts: deb, net: inc - (exp + sav + deb) };
   });
 
   const grandAnnualIncome = annualSummary.reduce((acc, cur) => acc + cur.income, 0);
@@ -409,83 +272,77 @@ export default function App() {
   const grandAnnualNet = annualSummary.reduce((acc, cur) => acc + cur.net, 0);
 
   return (
-    <div className="max-w-md sm:max-w-4xl mx-auto p-4 bg-gray-50 min-h-screen font-sans relative">
+    <div className="max-w-md mx-auto p-3 sm:p-4 bg-gray-50 min-h-screen font-sans relative pb-12">
       
-      {/* Cabecera Personalizable */}
-      <div className="bg-white p-4 rounded-xl shadow-sm mb-4 flex flex-col gap-2 border">
+      {/* Cabecera Personalizable Optimizada para Móvil */}
+      <div className="bg-white p-3.5 rounded-2xl shadow-sm mb-3 flex flex-col gap-2 border border-gray-100">
         <input
           type="text"
           value={budgetName}
           onChange={e => setBudgetName(e.target.value)}
           placeholder="Nombre del Presupuesto"
-          className="text-lg font-bold text-gray-800 border-b pb-1 outline-none focus:border-blue-500 bg-transparent"
+          className="text-base sm:text-lg font-bold text-gray-800 border-b pb-1 outline-none focus:border-blue-500 bg-transparent"
         />
         <div className="flex justify-between items-center text-xs text-gray-500">
-          <span>Fecha / Periodo:</span>
+          <span>Periodo:</span>
           <input
             type="text"
             value={budgetDate}
             onChange={e => setBudgetDate(e.target.value)}
             placeholder="Ej. Año 2026"
-            className="font-semibold text-gray-700 border rounded px-2 py-1 outline-none focus:border-blue-500 w-32 text-right"
+            className="font-semibold text-gray-700 border rounded-lg px-2 py-1 outline-none focus:border-blue-500 w-28 text-right bg-gray-50"
           />
         </div>
       </div>
 
-      {/* Navegación por Pestañas */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+      {/* Navegación por Pestañas (Grid Adaptado a Móvil) */}
+      <div className="grid grid-cols-2 gap-2 mb-3">
         <button
           onClick={() => setActiveTab('budget')}
-          className={`py-3 rounded-xl font-bold text-xs sm:text-sm shadow-sm transition-colors ${activeTab === 'budget' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 border'}`}
+          className={`py-2.5 px-2 rounded-xl font-bold text-xs shadow-sm transition-all ${activeTab === 'budget' ? 'bg-blue-600 text-white shadow-blue-200 shadow-md' : 'bg-white text-gray-700 border border-gray-100'}`}
         >
           📊 Presupuesto
         </button>
         <button
           onClick={() => setActiveTab('savings')}
-          className={`py-3 rounded-xl font-bold text-xs sm:text-sm shadow-sm transition-colors ${activeTab === 'savings' ? 'bg-emerald-600 text-white' : 'bg-white text-gray-700 border'}`}
+          className={`py-2.5 px-2 rounded-xl font-bold text-xs shadow-sm transition-all ${activeTab === 'savings' ? 'bg-emerald-600 text-white shadow-emerald-200 shadow-md' : 'bg-white text-gray-700 border border-gray-100'}`}
         >
           🎯 Ahorros
         </button>
         <button
           onClick={() => setActiveTab('debts')}
-          className={`py-3 rounded-xl font-bold text-xs sm:text-sm shadow-sm transition-colors ${activeTab === 'debts' ? 'bg-orange-600 text-white' : 'bg-white text-gray-700 border'}`}
+          className={`py-2.5 px-2 rounded-xl font-bold text-xs shadow-sm transition-all ${activeTab === 'debts' ? 'bg-orange-600 text-white shadow-orange-200 shadow-md' : 'bg-white text-gray-700 border border-gray-100'}`}
         >
           💳 Deudas Reales
         </button>
         <button
           onClick={() => setActiveTab('annual')}
-          className={`py-3 rounded-xl font-bold text-xs sm:text-sm shadow-sm transition-colors ${activeTab === 'annual' ? 'bg-purple-600 text-white' : 'bg-white text-gray-700 border'}`}
+          className={`py-2.5 px-2 rounded-xl font-bold text-xs shadow-sm transition-all ${activeTab === 'annual' ? 'bg-purple-600 text-white shadow-purple-200 shadow-md' : 'bg-white text-gray-700 border border-gray-100'}`}
         >
           📈 Resumen Anual
         </button>
       </div>
 
-      {/* Botones de Respaldo y Restauración */}
+      {/* Botones de Respaldo y Restauración Compactos */}
       <div className="flex gap-2 mb-4">
-        <button onClick={exportData} className="flex-1 bg-gray-800 text-white py-2 rounded-lg text-xs font-semibold shadow-sm">
+        <button onClick={exportData} className="flex-1 bg-gray-800 text-white py-2 px-3 rounded-xl text-xs font-semibold shadow-sm active:scale-95 transition-transform">
           📥 Guardar Respaldo
         </button>
-        <button onClick={() => fileInputRef.current?.click()} className="flex-1 bg-gray-700 text-white py-2 rounded-lg text-xs font-semibold shadow-sm">
+        <button onClick={() => fileInputRef.current?.click()} className="flex-1 bg-gray-700 text-white py-2 px-3 rounded-xl text-xs font-semibold shadow-sm active:scale-95 transition-transform">
           📂 Abrir Archivo
         </button>
-        <input 
-          type="file" 
-          ref={fileInputRef} 
-          onChange={importData} 
-          accept=".json" 
-          className="hidden" 
-        />
+        <input type="file" ref={fileInputRef} onChange={importData} accept=".json" className="hidden" />
       </div>
 
       {activeTab === 'budget' ? (
         <>
           {/* Selector de Mes */}
           <div className="mb-4">
-            <label className="text-xs font-semibold text-gray-600 uppercase block mb-1">Seleccionar Mes:</label>
+            <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1">Seleccionar Mes:</label>
             <select
               value={currentMonth}
               onChange={e => setCurrentMonth(e.target.value)}
-              className="w-full p-3 border rounded-xl bg-white font-bold text-gray-800 shadow-sm outline-none"
+              className="w-full p-3 border rounded-xl bg-white font-bold text-gray-800 shadow-sm outline-none text-sm border-gray-200"
             >
               {MONTHS.map(m => (
                 <option key={m} value={m}>{m}</option>
@@ -493,51 +350,52 @@ export default function App() {
             </select>
           </div>
 
-          {/* Tarjetas de Resumen Interactivas (Clickeables) */}
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-6">
+          {/* Tarjetas de Resumen Interactivas (Distribución Móvil 2x2 + 1) */}
+          <div className="grid grid-cols-2 gap-2 mb-4">
             <div 
               onClick={() => setModalType('Ingresos')}
-              className="bg-white p-3 rounded-xl shadow-sm text-center border cursor-pointer hover:border-green-500 hover:bg-green-50/10 transition-all"
+              className="bg-white p-3 rounded-xl shadow-sm text-center border border-gray-100 cursor-pointer active:bg-green-50 transition-colors"
             >
-              <p className="text-[11px] text-gray-500 font-medium">Ingresos (Ver 🔍)</p>
-              <p className="text-xs sm:text-sm font-bold text-green-600 mt-1">{formatCOP(totalIncome)}</p>
+              <p className="text-[10px] text-gray-400 font-semibold uppercase">Ingresos (Ver 🔍)</p>
+              <p className="text-sm font-bold text-green-600 mt-1 truncate">{formatCOP(totalIncome)}</p>
             </div>
             <div 
               onClick={() => setModalType('Gastos')}
-              className="bg-white p-3 rounded-xl shadow-sm text-center border cursor-pointer hover:border-red-500 hover:bg-red-50/10 transition-all"
+              className="bg-white p-3 rounded-xl shadow-sm text-center border border-gray-100 cursor-pointer active:bg-red-50 transition-colors"
             >
-              <p className="text-[11px] text-gray-500 font-medium">Gastos (Ver 🔍)</p>
-              <p className="text-xs sm:text-sm font-bold text-red-600 mt-1">{formatCOP(totalGastosMes)}</p>
+              <p className="text-[10px] text-gray-400 font-semibold uppercase">Gastos (Ver 🔍)</p>
+              <p className="text-sm font-bold text-red-600 mt-1 truncate">{formatCOP(totalGastosMes)}</p>
             </div>
             <div 
               onClick={() => setModalType('Ahorros')}
-              className="bg-white p-3 rounded-xl shadow-sm text-center border cursor-pointer hover:border-emerald-500 hover:bg-emerald-50/10 transition-all"
+              className="bg-white p-3 rounded-xl shadow-sm text-center border border-gray-100 cursor-pointer active:bg-emerald-50 transition-colors"
             >
-              <p className="text-[11px] text-gray-500 font-medium">Ahorros (Ver 🔍)</p>
-              <p className="text-xs sm:text-sm font-bold text-emerald-600 mt-1">{formatCOP(totalAhorrosMes)}</p>
+              <p className="text-[10px] text-gray-400 font-semibold uppercase">Ahorros (Ver 🔍)</p>
+              <p className="text-sm font-bold text-emerald-600 mt-1 truncate">{formatCOP(totalAhorrosMes)}</p>
             </div>
             <div 
               onClick={() => setModalType('Deudas Mes')}
-              className="bg-white p-3 rounded-xl shadow-sm text-center border cursor-pointer hover:border-orange-500 hover:bg-orange-50/10 transition-all"
+              className="bg-white p-3 rounded-xl shadow-sm text-center border border-gray-100 cursor-pointer active:bg-orange-50 transition-colors"
             >
-              <p className="text-[11px] text-gray-500 font-medium">Deudas Mes (Ver 🔍)</p>
-              <p className="text-xs sm:text-sm font-bold text-orange-600 mt-1">{formatCOP(totalDeudasMes)}</p>
-            </div>
-            <div className="bg-blue-600 text-white p-3 rounded-xl shadow-sm text-center col-span-2 sm:col-span-1">
-              <p className="text-[11px] opacity-85 font-medium">% a Favor</p>
-              <p className="text-xs sm:text-sm font-bold mt-1">{porcentajeAFavor.toFixed(1)}%</p>
+              <p className="text-[10px] text-gray-400 font-semibold uppercase">Deudas Mes (Ver 🔍)</p>
+              <p className="text-sm font-bold text-orange-600 mt-1 truncate">{formatCOP(totalDeudasMes)}</p>
             </div>
           </div>
+          
+          <div className="bg-blue-600 text-white p-3 rounded-xl shadow-sm text-center mb-5 flex justify-between items-center px-4">
+            <span className="text-xs font-medium opacity-90">% a Favor del Mes:</span>
+            <span className="text-base font-bold">{porcentajeAFavor.toFixed(1)}%</span>
+          </div>
 
-          {/* Formulario de Ingreso / Edición */}
-          <form onSubmit={handleSubmit} className={`bg-white p-4 rounded-xl shadow-sm mb-6 flex flex-col gap-3 border ${editingId ? 'border-blue-500 bg-blue-50/20' : ''}`}>
+          {/* Formulario de Ingreso / Edición Optimizada */}
+          <form onSubmit={handleSubmit} className={`bg-white p-4 rounded-2xl shadow-sm mb-5 flex flex-col gap-3 border ${editingId ? 'border-blue-500 bg-blue-50/10' : 'border-gray-100'}`}>
             <div className="flex justify-between items-center">
-              <label className="text-xs font-semibold text-gray-600 uppercase">
+              <label className="text-xs font-bold text-gray-600 uppercase tracking-wider">
                 {editingId ? 'Editando Movimiento' : `Nuevo Movimiento (${currentMonth})`}
               </label>
               {editingId && (
                 <button type="button" onClick={cancelEdit} className="text-xs text-red-500 font-bold underline">
-                  Cancelar edición
+                  Cancelar
                 </button>
               )}
             </div>
@@ -548,7 +406,7 @@ export default function App() {
                 const cat = CATEGORIES.find(c => c.name === e.target.value);
                 if (cat) setSelectedCat(cat);
               }}
-              className="p-3 border rounded-lg text-sm bg-white font-medium text-gray-800 outline-none"
+              className="p-3 border rounded-xl text-sm bg-white font-medium text-gray-800 outline-none border-gray-200"
             >
               {CATEGORIES.map(cat => (
                 <option key={cat.name} value={cat.name}>
@@ -559,10 +417,10 @@ export default function App() {
 
             <input
               type="text"
-              placeholder="Detalle (ej. Netflix, Cuota Claro, Gasolina...)"
+              placeholder="Detalle (ej. Quincena, Netflix...)"
               value={desc}
               onChange={e => setDesc(e.target.value)}
-              className="p-3 border rounded-lg text-sm text-gray-800 outline-none"
+              className="p-3 border rounded-xl text-sm text-gray-800 outline-none border-gray-200"
             />
 
             <input
@@ -571,161 +429,110 @@ export default function App() {
               placeholder="Monto en COP"
               value={amount}
               onChange={e => setAmount(e.target.value)}
-              className="p-3 border rounded-lg text-sm text-gray-800 outline-none font-medium"
+              className="p-3 border rounded-xl text-sm text-gray-800 outline-none font-medium border-gray-200"
             />
 
-            <button type="submit" className={`py-3 rounded-lg font-medium text-sm shadow-sm text-white ${editingId ? 'bg-green-600' : 'bg-blue-600'}`}>
+            <button type="submit" className={`py-3.5 rounded-xl font-bold text-sm shadow-sm text-white active:scale-95 transition-transform ${editingId ? 'bg-green-600' : 'bg-blue-600'}`}>
               {editingId ? 'Actualizar Movimiento' : `Añadir a ${currentMonth}`}
             </button>
           </form>
 
           {/* Tabla de Registros */}
-          <h2 className="text-md font-semibold mb-2 text-gray-700">Registros de {currentMonth}</h2>
-          <div className="bg-white rounded-xl shadow-sm overflow-x-auto mb-4">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b bg-gray-100 text-xs text-gray-600 uppercase">
-                  <th className="p-3">Categoría</th>
-                  <th className="p-3">Detalle</th>
-                  <th className="p-3">Monto</th>
-                  <th className="p-3 text-center">Acción</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 text-sm">
-                {monthTxs.length === 0 && (
-                  <tr>
-                    <td colSpan={4} className="p-4 text-center text-gray-400">Sin registros para {currentMonth}</td>
+          <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Registros de {currentMonth}</h2>
+          <div className="bg-white rounded-2xl shadow-sm overflow-hidden mb-4 border border-gray-100">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse min-w-[300px]">
+                <thead>
+                  <tr className="border-b bg-gray-50 text-[10px] text-gray-400 uppercase">
+                    <th className="p-3">Categoría / Detalle</th>
+                    <th className="p-3">Monto</th>
+                    <th className="p-3 text-center">Acción</th>
                   </tr>
-                )}
-                {monthTxs.map(t => (
-                  <tr key={t.id} className={`hover:bg-gray-50 ${editingId === t.id ? 'bg-blue-50' : ''}`}>
-                    <td className="p-3 font-medium text-gray-700">{t.category}</td>
-                    <td className="p-3 text-gray-600">{t.desc}</td>
-                    <td className={`p-3 font-bold ${t.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
-                      {t.type === 'income' ? '+' : '-'}{formatCOP(t.amount)}
-                    </td>
-                    <td className="p-3 text-center flex justify-center gap-2">
-                      <button onClick={() => startEdit(t)} className="text-blue-500 hover:text-blue-700 text-xs font-bold px-2 py-1 bg-blue-50 rounded">
-                        Editar
-                      </button>
-                      <button onClick={() => deleteTx(t.id)} className="text-red-400 hover:text-red-600 text-xs font-bold px-2 py-1 bg-red-50 rounded">
-                        ✕
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-gray-100 text-xs">
+                  {monthTxs.length === 0 && (
+                    <tr>
+                      <td colSpan={3} className="p-6 text-center text-gray-400">Sin registros para {currentMonth}</td>
+                    </tr>
+                  )}
+                  {monthTxs.map(t => (
+                    <tr key={t.id} className="hover:bg-gray-50">
+                      <td className="p-3">
+                        <span className="font-bold text-gray-800 block">{t.category}</span>
+                        <span className="text-gray-400 text-[11px]">{t.desc}</span>
+                      </td>
+                      <td className={`p-3 font-bold whitespace-nowrap ${t.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                        {t.type === 'income' ? '+' : '-'}{formatCOP(t.amount)}
+                      </td>
+                      <td className="p-3 text-center whitespace-nowrap">
+                        <button onClick={() => startEdit(t)} className="text-blue-500 font-bold px-2 py-1 bg-blue-50 rounded-lg mr-1 text-[11px]">Editar</button>
+                        <button onClick={() => deleteTx(t.id)} className="text-red-400 font-bold px-2 py-1 bg-red-50 rounded-lg text-[11px]">✕</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
 
           {/* Balance Final del Mes */}
-          <div className="bg-white p-4 rounded-xl shadow-sm flex justify-between items-center">
-            <span className="font-semibold text-gray-700">Balance Neto ({currentMonth}):</span>
-            <span className={`text-lg font-bold ${balance >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
+          <div className="bg-white p-4 rounded-2xl shadow-sm flex justify-between items-center border border-gray-100">
+            <span className="text-xs font-bold text-gray-600 uppercase">Balance Neto ({currentMonth}):</span>
+            <span className={`text-base font-bold ${balance >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
               {formatCOP(balance)}
             </span>
           </div>
         </>
       ) : activeTab === 'savings' ? (
         <>
-          {/* Pestaña de Ahorros, Fondo de Emergencia y Metas */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-            <div className="bg-white p-4 rounded-xl shadow-sm border border-emerald-100 text-center">
-              <p className="text-xs text-gray-500 uppercase font-semibold">Total Ahorrado (Histórico)</p>
-              <p className="text-2xl font-bold text-emerald-600 mt-1">{formatCOP(totalHistoricoAhorros)}</p>
-              <p className="text-[11px] text-gray-400 mt-1">Registrado en categoría "Ahorro"</p>
+          <div className="grid grid-cols-1 gap-3 mb-5">
+            <div className="bg-white p-4 rounded-2xl shadow-sm border border-emerald-100 text-center">
+              <p className="text-[11px] text-gray-400 uppercase font-bold tracking-wider">Total Ahorrado (Histórico)</p>
+              <p className="text-xl font-bold text-emerald-600 mt-1">{formatCOP(totalHistoricoAhorros)}</p>
             </div>
-            <div className="bg-white p-4 rounded-xl shadow-sm border border-amber-100 text-center">
-              <p className="text-xs text-gray-500 uppercase font-semibold">Fondo de Emergencia</p>
-              <p className="text-2xl font-bold text-amber-600 mt-1">{formatCOP(totalHistoricoEmergencia)}</p>
-              <p className="text-[11px] text-gray-400 mt-1">Registrado en "Fondo de emergencia"</p>
+            <div className="bg-white p-4 rounded-2xl shadow-sm border border-amber-100 text-center">
+              <p className="text-[11px] text-gray-400 uppercase font-bold tracking-wider">Fondo de Emergencia</p>
+              <p className="text-xl font-bold text-amber-600 mt-1">{formatCOP(totalHistoricoEmergencia)}</p>
             </div>
           </div>
 
-          {/* Formulario para agregar o editar Meta */}
-          <form onSubmit={handleGoalSubmit} className={`bg-white p-4 rounded-xl shadow-sm mb-6 flex flex-col gap-3 border ${editingGoalId ? 'border-emerald-500 bg-emerald-50/20' : ''}`}>
+          <form onSubmit={handleGoalSubmit} className={`bg-white p-4 rounded-2xl shadow-sm mb-5 flex flex-col gap-3 border ${editingGoalId ? 'border-emerald-500 bg-emerald-50/10' : 'border-gray-100'}`}>
             <div className="flex justify-between items-center">
-              <label className="text-xs font-semibold text-gray-600 uppercase">
-                {editingGoalId ? 'Editando Meta u Objetivo' : 'Añadir Nueva Meta u Objetivo'}
-              </label>
-              {editingGoalId && (
-                <button type="button" onClick={cancelGoalEdit} className="text-xs text-red-500 font-bold underline">
-                  Cancelar
-                </button>
-              )}
+              <label className="text-xs font-bold text-gray-600 uppercase tracking-wider">{editingGoalId ? 'Editando Meta' : 'Añadir Nueva Meta'}</label>
+              {editingGoalId && <button type="button" onClick={cancelGoalEdit} className="text-xs text-red-500 font-bold underline">Cancelar</button>}
             </div>
-
-            <input
-              type="text"
-              placeholder="Nombre de la meta (ej. Moto nueva, Viaje...)"
-              value={newGoalName}
-              onChange={e => setNewGoalName(e.target.value)}
-              className="p-3 border rounded-lg text-sm text-gray-800 outline-none"
-            />
-            <input
-              type="text"
-              inputMode="numeric"
-              placeholder="Monto objetivo total en COP"
-              value={newGoalTarget}
-              onChange={e => setNewGoalTarget(e.target.value)}
-              className="p-3 border rounded-lg text-sm text-gray-800 outline-none font-medium"
-            />
-            <input
-              type="text"
-              inputMode="numeric"
-              placeholder="Monto actual ahorrado (Opcional)"
-              value={newGoalCurrent}
-              onChange={e => setNewGoalCurrent(e.target.value)}
-              className="p-3 border rounded-lg text-sm text-gray-800 outline-none font-medium"
-            />
-
-            <button type="submit" className={`py-3 rounded-lg font-medium text-sm shadow-sm text-white ${editingGoalId ? 'bg-green-600' : 'bg-emerald-600'}`}>
-              {editingGoalId ? 'Actualizar Meta' : 'Crear Meta'}
-            </button>
+            <input type="text" placeholder="Nombre de la meta (ej. Viaje...)" value={newGoalName} onChange={e => setNewGoalName(e.target.value)} className="p-3 border rounded-xl text-sm outline-none border-gray-200" />
+            <input type="text" inputMode="numeric" placeholder="Monto objetivo total" value={newGoalTarget} onChange={e => setNewGoalTarget(e.target.value)} className="p-3 border rounded-xl text-sm outline-none font-medium border-gray-200" />
+            <input type="text" inputMode="numeric" placeholder="Monto actual ahorrado" value={newGoalCurrent} onChange={e => setNewGoalCurrent(e.target.value)} className="p-3 border rounded-xl text-sm outline-none font-medium border-gray-200" />
+            <button type="submit" className={`py-3.5 rounded-xl font-bold text-sm text-white active:scale-95 transition-transform ${editingGoalId ? 'bg-green-600' : 'bg-emerald-600'}`}>{editingGoalId ? 'Actualizar Meta' : 'Crear Meta'}</button>
           </form>
 
-          {/* Listado de Metas y Objetivos */}
-          <h2 className="text-md font-semibold mb-3 text-gray-700">Tus Metas y Objetivos Financieros</h2>
-          <div className="flex flex-col gap-3 mb-6">
-            {goals.length === 0 && (
-              <p className="text-sm text-gray-400 text-center py-4 bg-white rounded-xl">No hay metas creadas aún</p>
-            )}
+          <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Tus Metas y Objetivos</h2>
+          <div className="flex flex-col gap-3 mb-5">
+            {goals.length === 0 && <p className="text-sm text-gray-400 text-center py-6 bg-white rounded-2xl border border-gray-100">No hay metas creadas</p>}
             {goals.map(goal => {
               const progress = goal.targetAmount > 0 ? Math.min(100, (goal.currentAmount / goal.targetAmount) * 100) : 0;
               return (
-                <div key={goal.id} className={`bg-white p-4 rounded-xl shadow-sm border flex flex-col gap-3 ${editingGoalId === goal.id ? 'border-emerald-500 bg-emerald-50/10' : ''}`}>
+                <div key={goal.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-3">
                   <div className="flex justify-between items-center">
                     <span className="font-bold text-gray-800 text-sm">{goal.name}</span>
-                    <div className="flex gap-2">
-                      <button onClick={() => startEditGoal(goal)} className="text-emerald-600 hover:text-emerald-800 text-xs font-bold px-2 py-1 bg-emerald-50 rounded">
-                        Editar
-                      </button>
-                      <button onClick={() => deleteGoal(goal.id)} className="text-red-400 hover:text-red-600 text-xs font-bold px-2 py-1 bg-red-50 rounded">
-                        ✕
-                      </button>
+                    <div className="flex gap-1">
+                      <button onClick={() => startEditGoal(goal)} className="text-emerald-600 text-[11px] font-bold px-2 py-1 bg-emerald-50 rounded-lg">Editar</button>
+                      <button onClick={() => deleteGoal(goal.id)} className="text-red-400 text-[11px] font-bold px-2 py-1 bg-red-50 rounded-lg">✕</button>
                     </div>
                   </div>
-                  
-                  <div className="flex justify-between text-xs text-gray-600">
+                  <div className="flex justify-between text-xs text-gray-500">
                     <span>Ahorrado: <strong className="text-emerald-600">{formatCOP(goal.currentAmount)}</strong></span>
                     <span>Meta: <strong>{formatCOP(goal.targetAmount)}</strong></span>
                   </div>
-
-                  {/* Barra de Progreso */}
-                  <div className="w-full bg-gray-200 h-3 rounded-full overflow-hidden">
-                    <div className="bg-emerald-500 h-full transition-all duration-300" style={{ width: `${progress}%` }}></div>
+                  <div className="w-full bg-gray-100 h-2.5 rounded-full overflow-hidden">
+                    <div className="bg-emerald-500 h-full rounded-full" style={{ width: `${progress}%` }}></div>
                   </div>
-                  <div className="flex justify-between items-center text-xs text-gray-500 pt-1">
+                  <div className="flex justify-between items-center text-xs text-gray-400 pt-1">
                     <span>{progress.toFixed(1)}% completado</span>
-                    <div className="flex gap-2">
-                      <button onClick={() => {
-                        const updated = goal.currentAmount + 50000;
-                        setGoals(goals.map(g => g.id === goal.id ? { ...g, currentAmount: updated } : g));
-                      }} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded font-bold text-gray-700">+ $50k</button>
-                      <button onClick={() => {
-                        const updated = goal.currentAmount + 200000;
-                        setGoals(goals.map(g => g.id === goal.id ? { ...g, currentAmount: updated } : g));
-                      }} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded font-bold text-gray-700">+ $200k</button>
+                    <div className="flex gap-1.5">
+                      <button onClick={() => setGoals(goals.map(g => g.id === goal.id ? { ...g, currentAmount: g.currentAmount + 50000 } : g))} className="px-2 py-1 bg-gray-50 border rounded-lg font-bold text-gray-700 text-[11px]">+ $50k</button>
+                      <button onClick={() => setGoals(goals.map(g => g.id === goal.id ? { ...g, currentAmount: g.currentAmount + 200000 } : g))} className="px-2 py-1 bg-gray-50 border rounded-lg font-bold text-gray-700 text-[11px]">+ $200k</button>
                     </div>
                   </div>
                 </div>
@@ -735,130 +542,40 @@ export default function App() {
         </>
       ) : activeTab === 'debts' ? (
         <>
-          {/* Pestaña de Deudas Reales */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
-            <div className="bg-white p-3 rounded-xl shadow-sm text-center border border-orange-100">
-              <p className="text-xs text-gray-500 uppercase font-semibold">Deuda Total Inicial</p>
-              <p className="text-lg font-bold text-gray-800 mt-1">{formatCOP(totalDeudaReal)}</p>
-            </div>
-            <div className="bg-white p-3 rounded-xl shadow-sm text-center border border-emerald-100">
-              <p className="text-xs text-gray-500 uppercase font-semibold">Total Pagado</p>
-              <p className="text-lg font-bold text-emerald-600 mt-1">{formatCOP(totalPagadoDeudas)}</p>
-            </div>
-            <div className="bg-white p-3 rounded-xl shadow-sm text-center border border-red-100">
-              <p className="text-xs text-gray-500 uppercase font-semibold">Saldo Pendiente</p>
-              <p className="text-lg font-bold text-red-600 mt-1">{formatCOP(totalPendienteDeudas)}</p>
-            </div>
+          <div className="grid grid-cols-1 gap-2 mb-4">
+            <div className="bg-white p-3 rounded-xl shadow-sm text-center border border-gray-100 flex justify-between items-center px-4"><span className="text-xs text-gray-400 font-semibold uppercase">Deuda Total Inicial</span><strong className="text-sm font-bold text-gray-800">{formatCOP(totalDeudaReal)}</strong></div>
+            <div className="bg-white p-3 rounded-xl shadow-sm text-center border border-gray-100 flex justify-between items-center px-4"><span className="text-xs text-gray-400 font-semibold uppercase">Total Pagado</span><strong className="text-sm font-bold text-emerald-600">{formatCOP(totalPagadoDeudas)}</strong></div>
+            <div className="bg-white p-3 rounded-xl shadow-sm text-center border border-gray-100 flex justify-between items-center px-4"><span className="text-xs text-gray-400 font-semibold uppercase">Saldo Pendiente</span><strong className="text-sm font-bold text-red-600">{formatCOP(totalPendienteDeudas)}</strong></div>
           </div>
 
-          {/* Formulario de Deudas con Selectores */}
-          <form onSubmit={handleDebtSubmit} className={`bg-white p-4 rounded-xl shadow-sm mb-6 flex flex-col gap-3 border ${editingDebtId ? 'border-orange-500 bg-orange-50/20' : ''}`}>
+          <form onSubmit={handleDebtSubmit} className={`bg-white p-4 rounded-2xl shadow-sm mb-5 flex flex-col gap-3 border ${editingDebtId ? 'border-orange-500 bg-orange-50/10' : 'border-gray-100'}`}>
             <div className="flex justify-between items-center">
-              <label className="text-xs font-semibold text-gray-600 uppercase">
-                {editingDebtId ? 'Editando Deuda Real' : 'Añadir Nueva Deuda Real'}
-              </label>
-              {editingDebtId && (
-                <button type="button" onClick={cancelDebtEdit} className="text-xs text-red-500 font-bold underline">
-                  Cancelar
-                </button>
-              )}
+              <label className="text-xs font-bold text-gray-600 uppercase tracking-wider">{editingDebtId ? 'Editando Deuda' : 'Nueva Deuda'}</label>
+              {editingDebtId && <button type="button" onClick={cancelDebtEdit} className="text-xs text-red-500 font-bold underline">Cancelar</button>}
             </div>
-
-            <input
-              type="text"
-              placeholder="Nombre de la deuda (ej. Tarjeta, Celular financiado...)"
-              value={newDebtName}
-              onChange={e => setNewDebtName(e.target.value)}
-              className="p-3 border rounded-lg text-sm text-gray-800 outline-none"
-            />
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <div>
-                <label className="text-[10px] font-semibold text-gray-500 uppercase">Monto Total de la Deuda</label>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  placeholder="Ej. 1500000"
-                  value={newDebtTotal}
-                  onChange={e => setNewDebtTotal(e.target.value)}
-                  className="p-3 border rounded-lg text-sm text-gray-800 outline-none font-medium w-full"
-                />
-              </div>
-              <div>
-                <label className="text-[10px] font-semibold text-gray-500 uppercase">Monto ya Pagado</label>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  placeholder="Ej. 300000"
-                  value={newDebtPaid}
-                  onChange={e => setNewDebtPaid(e.target.value)}
-                  className="p-3 border rounded-lg text-sm text-gray-800 outline-none font-medium w-full"
-                />
-              </div>
+            <input type="text" placeholder="Nombre (ej. Tarjeta de Crédito...)" value={newDebtName} onChange={e => setNewDebtName(e.target.value)} className="p-3 border rounded-xl text-sm outline-none border-gray-200" />
+            <div className="grid grid-cols-2 gap-2">
+              <input type="text" inputMode="numeric" placeholder="Monto Total" value={newDebtTotal} onChange={e => setNewDebtTotal(e.target.value)} className="p-3 border rounded-xl text-sm outline-none border-gray-200" />
+              <input type="text" inputMode="numeric" placeholder="Monto Pagado" value={newDebtPaid} onChange={e => setNewDebtPaid(e.target.value)} className="p-3 border rounded-xl text-sm outline-none border-gray-200" />
             </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              <div>
-                <label className="text-[10px] font-semibold text-gray-500 uppercase">Cuota Mensual</label>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  placeholder="Ej. 150000"
-                  value={newDebtMonthly}
-                  onChange={e => setNewDebtMonthly(e.target.value)}
-                  className="p-3 border rounded-lg text-sm text-gray-800 outline-none font-medium w-full"
-                />
-              </div>
-              <div>
-                <label className="text-[10px] font-semibold text-gray-500 uppercase">Total Cuotas</label>
-                <select
-                  value={newDebtTotalInst}
-                  onChange={e => setNewDebtTotalInst(parseInt(e.target.value, 10))}
-                  className="p-3 border rounded-lg text-sm bg-white font-medium text-gray-800 outline-none w-full"
-                >
-                  {INSTALLMENT_OPTIONS.map(num => (
-                    <option key={num} value={num}>{num} cuotas</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="text-[10px] font-semibold text-gray-500 uppercase">Cuotas Pagadas</label>
-                <select
-                  value={newDebtPaidInst}
-                  onChange={e => setNewDebtPaidInst(parseInt(e.target.value, 10))}
-                  className="p-3 border rounded-lg text-sm bg-white font-medium text-gray-800 outline-none w-full"
-                >
-                  {Array.from({ length: newDebtTotalInst + 1 }, (_, i) => i).map(num => (
-                    <option key={num} value={num}>{num} pagadas</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div>
-              <label className="text-[10px] font-semibold text-gray-500 uppercase">Fecha de Corte / Pago</label>
-              <select
-                value={newDebtDueDate}
-                onChange={e => setNewDebtDueDate(e.target.value)}
-                className="p-3 border rounded-lg text-sm bg-white font-medium text-gray-800 outline-none w-full"
-              >
-                {DUE_DATE_OPTIONS.map(dateOpt => (
-                  <option key={dateOpt} value={dateOpt}>{dateOpt}</option>
-                ))}
+            <div className="grid grid-cols-3 gap-2">
+              <input type="text" inputMode="numeric" placeholder="Cuota" value={newDebtMonthly} onChange={e => setNewDebtMonthly(e.target.value)} className="p-3 border rounded-xl text-sm outline-none border-gray-200" />
+              <select value={newDebtTotalInst} onChange={e => setNewDebtTotalInst(parseInt(e.target.value))} className="p-3 border rounded-xl text-xs bg-white outline-none border-gray-200">
+                {INSTALLMENT_OPTIONS.map(n => <option key={n} value={n}>{n} cuotas</option>)}
+              </select>
+              <select value={newDebtPaidInst} onChange={e => setNewDebtPaidInst(parseInt(e.target.value))} className="p-3 border rounded-xl text-xs bg-white outline-none border-gray-200">
+                {Array.from({ length: newDebtTotalInst + 1 }, (_, i) => i).map(n => <option key={n} value={n}>{n} pag.</option>)}
               </select>
             </div>
-
-            <button type="submit" className={`py-3 rounded-lg font-medium text-sm shadow-sm text-white ${editingDebtId ? 'bg-green-600' : 'bg-orange-600'}`}>
-              {editingDebtId ? 'Actualizar Deuda' : 'Guardar Deuda'}
-            </button>
+            <select value={newDebtDueDate} onChange={e => setNewDebtDueDate(e.target.value)} className="p-3 border rounded-xl text-sm bg-white outline-none border-gray-200">
+              {DUE_DATE_OPTIONS.map(d => <option key={d} value={d}>{d}</option>)}
+            </select>
+            <button type="submit" className={`py-3.5 rounded-xl font-bold text-sm text-white active:scale-95 transition-transform ${editingDebtId ? 'bg-green-600' : 'bg-orange-600'}`}>{editingDebtId ? 'Actualizar Deuda' : 'Guardar Deuda'}</button>
           </form>
 
-          {/* Listado / Tabla de Deudas Reales */}
-          <h2 className="text-md font-semibold mb-3 text-gray-700">Control de Deudas y Cuotas</h2>
-          <div className="flex flex-col gap-3 mb-6">
-            {debts.length === 0 && (
-              <p className="text-sm text-gray-400 text-center py-4 bg-white rounded-xl">No hay deudas registradas</p>
-            )}
+          <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Control de Deudas</h2>
+          <div className="flex flex-col gap-3 mb-5">
+            {debts.length === 0 && <p className="text-sm text-gray-400 text-center py-6 bg-white rounded-2xl border border-gray-100">No hay deudas registradas</p>}
             {debts.map(debt => {
               const remaining = Math.max(0, debt.totalAmount - debt.paidAmount);
               const remainingInstallments = Math.max(0, debt.totalInstallments - debt.paidInstallments);
@@ -866,46 +583,35 @@ export default function App() {
               const isPaidOff = remaining === 0 || remainingInstallments === 0;
 
               return (
-                <div key={debt.id} className={`bg-white p-4 rounded-xl shadow-sm border flex flex-col gap-3 ${editingDebtId === debt.id ? 'border-orange-500 bg-orange-50/10' : ''}`}>
+                <div key={debt.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-3">
                   <div className="flex justify-between items-center">
                     <div>
                       <span className="font-bold text-gray-800 text-sm block">{debt.name}</span>
-                      <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full inline-block mt-1 ${isPaidOff ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                        {isPaidOff ? '¡Deuda Cancelada! 🎉' : `Faltan ${remainingInstallments} cuotas (${formatCOP(remaining)})`}
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full inline-block mt-1 ${isPaidOff ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                        {isPaidOff ? '¡Deuda Cancelada! 🎉' : `Faltan ${remainingInstallments} cuotas`}
                       </span>
                     </div>
-                    <div className="flex gap-2">
-                      <button onClick={() => startEditDebt(debt)} className="text-orange-600 hover:text-orange-800 text-xs font-bold px-2 py-1 bg-orange-50 rounded">
-                        Editar
-                      </button>
-                      <button onClick={() => deleteDebt(debt.id)} className="text-red-400 hover:text-red-600 text-xs font-bold px-2 py-1 bg-red-50 rounded">
-                        ✕
-                      </button>
+                    <div className="flex gap-1">
+                      <button onClick={() => startEditDebt(debt)} className="text-orange-600 text-[11px] font-bold px-2 py-1 bg-orange-50 rounded-lg">Editar</button>
+                      <button onClick={() => deleteDebt(debt.id)} className="text-red-400 text-[11px] font-bold px-2 py-1 bg-red-50 rounded-lg">✕</button>
                     </div>
                   </div>
-
-                  <div className="grid grid-cols-2 sm:grid-cols-3 text-xs text-gray-600 bg-gray-50 p-3 rounded-lg gap-2">
-                    <div>Total Deuda: <strong className="text-gray-800 block">{formatCOP(debt.totalAmount)}</strong></div>
+                  <div className="grid grid-cols-2 text-xs text-gray-500 bg-gray-50 p-3 rounded-xl gap-2 border border-gray-100">
+                    <div>Total: <strong className="text-gray-800 block">{formatCOP(debt.totalAmount)}</strong></div>
                     <div>Pagado: <strong className="text-emerald-600 block">{formatCOP(debt.paidAmount)}</strong></div>
-                    <div>Cuota Mensual: <strong className="text-blue-600 block">{formatCOP(debt.monthlyPayment)}</strong></div>
-                    <div>Cuotas Pagadas: <strong className="text-purple-600 block">{debt.paidInstallments} de {debt.totalInstallments}</strong></div>
-                    <div>Cuotas Debidas: <strong className="text-red-600 block">{remainingInstallments} cuotas restantes</strong></div>
-                    <div>Corte: <strong className="text-gray-700 block">{debt.dueDate}</strong></div>
+                    <div>Cuota: <strong className="text-blue-600 block">{formatCOP(debt.monthlyPayment)}</strong></div>
+                    <div>Plazo: <strong className="text-purple-600 block">{debt.paidInstallments}/{debt.totalInstallments} pagadas</strong></div>
                   </div>
-
-                  {/* Barra de Progreso de Pago */}
-                  <div className="w-full bg-gray-200 h-2.5 rounded-full overflow-hidden">
-                    <div className="bg-emerald-500 h-full transition-all duration-300" style={{ width: `${progress}%` }}></div>
+                  <div className="w-full bg-gray-100 h-2.5 rounded-full overflow-hidden">
+                    <div className="bg-emerald-500 h-full rounded-full" style={{ width: `${progress}%` }}></div>
                   </div>
-                  <div className="flex justify-between items-center text-xs text-gray-500">
+                  <div className="flex justify-between items-center text-xs text-gray-400">
                     <span>{progress.toFixed(1)}% pagado</span>
-                    <div className="flex gap-2">
-                      <button onClick={() => {
-                        const nextPaidInst = Math.min(debt.totalInstallments, debt.paidInstallments + 1);
-                        const nextPaidAmount = Math.min(debt.totalAmount, debt.paidAmount + debt.monthlyPayment);
-                        setDebts(debts.map(d => d.id === debt.id ? { ...d, paidAmount: nextPaidAmount, paidInstallments: nextPaidInst } : d));
-                      }} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded font-bold text-gray-700">+ Pagar Cuota</button>
-                    </div>
+                    <button onClick={() => {
+                      const nextInst = Math.min(debt.totalInstallments, debt.paidInstallments + 1);
+                      const nextAmt = Math.min(debt.totalAmount, debt.paidAmount + debt.monthlyPayment);
+                      setDebts(debts.map(d => d.id === debt.id ? { ...d, paidAmount: nextAmt, paidInstallments: nextInst } : d));
+                    }} className="px-3 py-1.5 bg-gray-900 text-white rounded-xl font-bold text-xs active:scale-95 transition-transform">+ Pagar Cuota</button>
                   </div>
                 </div>
               );
@@ -914,102 +620,73 @@ export default function App() {
         </>
       ) : (
         <>
-          {/* Pestaña de Resumen Anual */}
-          <div className="bg-white p-4 rounded-xl shadow-sm border mb-4">
-            <h2 className="text-md font-bold text-gray-800 mb-1">Recopilación y Balance Anual ({budgetDate})</h2>
-            <p className="text-xs text-gray-500 mb-4">Revisa el comportamiento mes a mes para identificar en qué periodos tuviste mayores gastos y qué puedes mejorar.</p>
+          <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-4">
+            <h2 className="text-sm font-bold text-gray-800 mb-1">Balance Anual ({budgetDate})</h2>
+            <p className="text-[11px] text-gray-400 mb-3">Comportamiento financiero acumulado del año.</p>
 
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 my-4">
-              <div className="bg-green-50 p-3 rounded-lg text-center border border-green-100">
-                <p className="text-[10px] text-gray-500 uppercase font-bold">Ingresos</p>
-                <p className="text-xs sm:text-sm font-bold text-green-600 mt-1">{formatCOP(grandAnnualIncome)}</p>
-              </div>
-              <div className="bg-red-50 p-3 rounded-lg text-center border border-red-100">
-                <p className="text-[10px] text-gray-500 uppercase font-bold">Gastos</p>
-                <p className="text-xs sm:text-sm font-bold text-red-600 mt-1">{formatCOP(grandAnnualExpense)}</p>
-              </div>
-              <div className="bg-emerald-50 p-3 rounded-lg text-center border border-emerald-100">
-                <p className="text-[10px] text-gray-500 uppercase font-bold">Ahorros</p>
-                <p className="text-xs sm:text-sm font-bold text-emerald-600 mt-1">{formatCOP(grandAnnualSavings)}</p>
-              </div>
-              <div className="bg-orange-50 p-3 rounded-lg text-center border border-orange-100">
-                <p className="text-[10px] text-gray-500 uppercase font-bold">Deudas Anual</p>
-                <p className="text-xs sm:text-sm font-bold text-orange-600 mt-1">{formatCOP(grandAnnualDebts)}</p>
-              </div>
-              <div className="bg-blue-50 p-3 rounded-lg text-center border border-blue-100 col-span-2 sm:col-span-1">
-                <p className="text-[10px] text-gray-500 uppercase font-bold">Neto Anual</p>
-                <p className={`text-xs sm:text-sm font-bold mt-1 ${grandAnnualNet >= 0 ? 'text-blue-600' : 'text-red-600'}`}>{formatCOP(grandAnnualNet)}</p>
-              </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="bg-green-50 p-3 rounded-xl text-center border border-green-100"><p className="text-[10px] text-gray-400 font-bold uppercase">Ingresos</p><p className="text-xs font-bold text-green-600 mt-1">{formatCOP(grandAnnualIncome)}</p></div>
+              <div className="bg-red-50 p-3 rounded-xl text-center border border-red-100"><p className="text-[10px] text-gray-400 font-bold uppercase">Gastos</p><p className="text-xs font-bold text-red-600 mt-1">{formatCOP(grandAnnualExpense)}</p></div>
+              <div className="bg-emerald-50 p-3 rounded-xl text-center border border-emerald-100"><p className="text-[10px] text-gray-400 font-bold uppercase">Ahorros</p><p className="text-xs font-bold text-emerald-600 mt-1">{formatCOP(grandAnnualSavings)}</p></div>
+              <div className="bg-orange-50 p-3 rounded-xl text-center border border-orange-100"><p className="text-[10px] text-gray-400 font-bold uppercase">Deudas</p><p className="text-xs font-bold text-orange-600 mt-1">{formatCOP(grandAnnualDebts)}</p></div>
             </div>
+            <div className="bg-blue-50 p-3 rounded-xl text-center border border-blue-100 mt-2"><p className="text-[10px] text-gray-400 font-bold uppercase">Neto Anual</p><p className={`text-sm font-bold mt-1 ${grandAnnualNet >= 0 ? 'text-blue-600' : 'text-red-600'}`}>{formatCOP(grandAnnualNet)}</p></div>
           </div>
 
-          {/* Tabla Desglosada Mes a Mes */}
-          <div className="bg-white rounded-xl shadow-sm overflow-x-auto mb-4 border">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b bg-gray-100 text-[11px] text-gray-600 uppercase">
-                  <th className="p-3">Mes</th>
-                  <th className="p-3">Ingresos</th>
-                  <th className="p-3">Gastos</th>
-                  <th className="p-3">Ahorros</th>
-                  <th className="p-3">Deudas</th>
-                  <th className="p-3">Neto</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 text-xs">
-                {annualSummary.map(row => (
-                  <tr key={row.month} className="hover:bg-gray-50">
-                    <td className="p-3 font-bold text-gray-800">{row.month}</td>
-                    <td className="p-3 font-semibold text-green-600">{formatCOP(row.income)}</td>
-                    <td className="p-3 font-semibold text-red-600">{formatCOP(row.expense)}</td>
-                    <td className="p-3 font-semibold text-emerald-600">{formatCOP(row.savings)}</td>
-                    <td className="p-3 font-semibold text-orange-600">{formatCOP(row.debts)}</td>
-                    <td className={`p-3 font-bold ${row.net >= 0 ? 'text-blue-600' : 'text-red-600'}`}>{formatCOP(row.net)}</td>
+          <div className="bg-white rounded-2xl shadow-sm overflow-hidden mb-4 border border-gray-100">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse min-w-[320px]">
+                <thead>
+                  <tr className="border-b bg-gray-50 text-[10px] text-gray-400 uppercase">
+                    <th className="p-3">Mes</th>
+                    <th className="p-3">Ingresos</th>
+                    <th className="p-3">Gastos</th>
+                    <th className="p-3">Neto</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Sugerencias Automáticas para Mejorar */}
-          <div className="bg-gradient-to-r from-blue-900 to-indigo-900 text-white p-5 rounded-2xl shadow-md mb-6">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-blue-200 mb-2">💡 Sugerencias Inteligentes para Mejorar</h3>
-            <ul className="text-xs space-y-2 opacity-90 leading-relaxed">
-              <li>• <strong>Control de Deudas y Suscripciones:</strong> Procura destinar un tope máximo del 30% de tus ingresos a deudas para evitar sobrecargas financieras a fin de año.</li>
-              <li>• <strong>Consistencia en el Ahorro:</strong> Intenta separar al menos un monto fijo cada mes apenas recibas tus ingresos, antes de realizar gastos operativos o de ocio.</li>
-              <li>• <strong>Evaluación de Meses Críticos:</strong> Revisa en la tabla superior qué meses registraron un balance negativo y anticipa recortes en rubros de "Otros Gastos" para el próximo periodo.</li>
-            </ul>
+                </thead>
+                <tbody className="divide-y divide-gray-100 text-xs">
+                  {annualSummary.map(row => (
+                    <tr key={row.month} className="hover:bg-gray-50">
+                      <td className="p-3 font-bold text-gray-800">{row.month}</td>
+                      <td className="p-3 font-semibold text-green-600">{formatCOP(row.income)}</td>
+                      <td className="p-3 font-semibold text-red-600">{formatCOP(row.expense)}</td>
+                      <td className={`p-3 font-bold ${row.net >= 0 ? 'text-blue-600' : 'text-red-600'}`}>{formatCOP(row.net)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </>
       )}
 
-      {/* Modal / Ventana Detallada al hacer clic en las tarjetas de resumen */}
+      {/* Modal / Ventana Detallada Móvil */}
       {modalType && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl p-5 max-w-lg w-full shadow-xl flex flex-col max-h-[85vh]">
-            <div className="flex justify-between items-center mb-4 border-b pb-2">
-              <h3 className="font-bold text-gray-800 text-base">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 z-50">
+          <div className="bg-white rounded-2xl p-4 max-w-sm w-full shadow-2xl flex flex-col max-h-[80vh]">
+            <div className="flex justify-between items-center mb-3 border-b pb-2">
+              <h3 className="font-bold text-gray-800 text-sm">
                 Detalle de <span className="text-blue-600">{modalType}</span> ({currentMonth})
               </h3>
               <button 
                 onClick={() => setModalType(null)} 
-                className="text-gray-400 hover:text-gray-600 font-bold text-lg px-2 py-1 rounded"
+                className="text-gray-400 font-bold text-base px-2 py-0.5 rounded-lg bg-gray-100"
               >
                 ✕
               </button>
             </div>
 
-            <div className="overflow-y-auto flex-1 divide-y divide-gray-100">
+            <div className="overflow-y-auto flex-1 divide-y divide-gray-100 text-xs">
               {getModalTransactions().length === 0 ? (
-                <p className="text-center text-gray-400 py-8 text-sm">No hay registros detallados en esta categoría para {currentMonth}.</p>
+                <p className="text-center text-gray-400 py-6">No hay registros en esta categoría.</p>
               ) : (
                 getModalTransactions().map(item => (
-                  <div key={item.id} className="py-3 flex justify-between items-center">
+                  <div key={item.id} className="py-2.5 flex justify-between items-center">
                     <div>
-                      <p className="text-xs font-bold text-gray-500 uppercase">{item.category}</p>
-                      <p className="text-sm font-medium text-gray-800">{item.desc}</p>
+                      <p className="text-[10px] font-bold text-gray-400 uppercase">{item.category}</p>
+                      <p className="font-medium text-gray-800">{item.desc}</p>
                     </div>
-                    <span className={`text-sm font-bold ${item.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                    <span className={`font-bold ${item.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
                       {item.type === 'income' ? '+' : '-'}{formatCOP(item.amount)}
                     </span>
                   </div>
@@ -1017,9 +694,9 @@ export default function App() {
               )}
             </div>
 
-            <div className="mt-4 pt-3 border-t flex justify-between items-center">
-              <span className="text-xs font-semibold text-gray-600">Total en {modalType}:</span>
-              <span className="text-base font-bold text-gray-800">
+            <div className="mt-3 pt-3 border-t flex justify-between items-center text-xs">
+              <span className="font-semibold text-gray-500">Total:</span>
+              <span className="font-bold text-gray-800 text-sm">
                 {formatCOP(
                   modalType === 'Ingresos' ? totalIncome :
                   modalType === 'Gastos' ? totalGastosMes :
@@ -1030,7 +707,7 @@ export default function App() {
 
             <button
               onClick={() => setModalType(null)}
-              className="mt-4 w-full bg-blue-600 text-white py-2.5 rounded-xl font-medium text-sm shadow-sm"
+              className="mt-3 w-full bg-blue-600 text-white py-3 rounded-xl font-bold text-xs shadow-sm active:scale-95 transition-transform"
             >
               Cerrar Detalle
             </button>
