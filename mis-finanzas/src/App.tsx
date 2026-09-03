@@ -7,7 +7,6 @@ interface Transaction {
   type: 'income' | 'expense';
   desc: string;
   amount: number;
-  paid?: boolean; // Nuevo campo para saber si ya se realizó el pago
 }
 
 interface Goal {
@@ -129,13 +128,9 @@ export default function App() {
       } : t));
       setEditingId(null);
     } else {
-      setTxs([{ id: Date.now().toString(), month: currentMonth, category: selectedCat.name, type: selectedCat.type as 'income' | 'expense', desc: desc || selectedCat.name, amount: cleanAmount, paid: false }, ...txs]);
+      setTxs([{ id: Date.now().toString(), month: currentMonth, category: selectedCat.name, type: selectedCat.type as 'income' | 'expense', desc: desc || selectedCat.name, amount: cleanAmount }, ...txs]);
     }
     setDesc(''); setAmount(''); setSelectedCat(CATEGORIES[0]);
-  };
-
-  const togglePaidStatus = (id: string) => {
-    setTxs(txs.map(t => t.id === id ? { ...t, paid: !t.paid } : t));
   };
 
   const startEdit = (t: Transaction) => {
@@ -243,10 +238,6 @@ export default function App() {
   const totalGastosMes = monthTxs.filter(t => t.type === 'expense' && t.category !== 'Ahorro' && t.category !== 'Fondo de emergencia' && t.category !== 'Suscripciones' && !t.category.includes('Deudas') && !t.category.includes('financiad')).reduce((acc, t) => acc + t.amount, 0);
   const totalAhorrosMes = monthTxs.filter(t => t.type === 'expense' && (t.category === 'Ahorro' || t.category === 'Fondo de emergencia')).reduce((acc, t) => acc + t.amount, 0);
   const totalDeudasMes = monthTxs.filter(t => t.type === 'expense' && (t.category === 'Suscripciones' || t.category.includes('Deudas') || t.category.includes('financiad'))).reduce((acc, t) => acc + t.amount, 0);
-  
-  // Total efectivamente pagado en el mes (para saber qué salidas ya salieron de tu bolsillo)
-  const totalPagadoMes = monthTxs.filter(t => t.type === 'expense' && t.paid).reduce((acc, t) => acc + t.amount, 0);
-
   const totalExpense = totalGastosMes + totalAhorrosMes + totalDeudasMes;
   const balance = totalIncome - totalExpense;
   const porcentajeAFavor = totalIncome > 0 ? Math.max(0, (balance / totalIncome) * 100) : 0;
@@ -283,6 +274,7 @@ export default function App() {
   return (
     <div className="max-w-md mx-auto p-3 sm:p-4 bg-gray-50 min-h-screen font-sans relative pb-12">
       
+      {/* Cabecera Personalizable Optimizada para Móvil */}
       <div className="bg-white p-3.5 rounded-2xl shadow-sm mb-3 flex flex-col gap-2 border border-gray-100">
         <input
           type="text"
@@ -303,6 +295,7 @@ export default function App() {
         </div>
       </div>
 
+      {/* Navegación por Pestañas (Grid Adaptado a Móvil) */}
       <div className="grid grid-cols-2 gap-2 mb-3">
         <button
           onClick={() => setActiveTab('budget')}
@@ -330,6 +323,7 @@ export default function App() {
         </button>
       </div>
 
+      {/* Botones de Respaldo y Restauración Compactos */}
       <div className="flex gap-2 mb-4">
         <button onClick={exportData} className="flex-1 bg-gray-800 text-white py-2 px-3 rounded-xl text-xs font-semibold shadow-sm active:scale-95 transition-transform">
           📥 Guardar Respaldo
@@ -342,6 +336,7 @@ export default function App() {
 
       {activeTab === 'budget' ? (
         <>
+          {/* Selector de Mes */}
           <div className="mb-4">
             <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1">Seleccionar Mes:</label>
             <select
@@ -355,7 +350,8 @@ export default function App() {
             </select>
           </div>
 
-          <div className="grid grid-cols-2 gap-2 mb-3">
+          {/* Tarjetas de Resumen Interactivas (Distribución Móvil 2x2 + 1) */}
+          <div className="grid grid-cols-2 gap-2 mb-4">
             <div 
               onClick={() => setModalType('Ingresos')}
               className="bg-white p-3 rounded-xl shadow-sm text-center border border-gray-100 cursor-pointer active:bg-green-50 transition-colors"
@@ -386,18 +382,12 @@ export default function App() {
             </div>
           </div>
           
-          {/* Indicador de qué tanto se ha pagado en el mes */}
-          <div className="bg-white p-3.5 rounded-xl shadow-sm border border-gray-100 mb-4 flex justify-between items-center px-4">
-            <div>
-              <p className="text-[10px] font-bold text-gray-400 uppercase">Efectivamente Pagado</p>
-              <p className="text-sm font-bold text-gray-800">{formatCOP(totalPagadoMes)}</p>
-            </div>
-            <div className="text-right">
-              <p className="text-[10px] font-bold text-gray-400 uppercase">% a Favor</p>
-              <p className="text-sm font-bold text-blue-600">{porcentajeAFavor.toFixed(1)}%</p>
-            </div>
+          <div className="bg-blue-600 text-white p-3 rounded-xl shadow-sm text-center mb-5 flex justify-between items-center px-4">
+            <span className="text-xs font-medium opacity-90">% a Favor del Mes:</span>
+            <span className="text-base font-bold">{porcentajeAFavor.toFixed(1)}%</span>
           </div>
 
+          {/* Formulario de Ingreso / Edición Optimizada */}
           <form onSubmit={handleSubmit} className={`bg-white p-4 rounded-2xl shadow-sm mb-5 flex flex-col gap-3 border ${editingId ? 'border-blue-500 bg-blue-50/10' : 'border-gray-100'}`}>
             <div className="flex justify-between items-center">
               <label className="text-xs font-bold text-gray-600 uppercase tracking-wider">
@@ -447,14 +437,14 @@ export default function App() {
             </button>
           </form>
 
-          {/* Tabla de Registros con Botón de Pagado */}
-          <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Registros de {currentMonth} (Toca para marcar pagado ✅)</h2>
+          {/* Tabla de Registros */}
+          <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Registros de {currentMonth}</h2>
           <div className="bg-white rounded-2xl shadow-sm overflow-hidden mb-4 border border-gray-100">
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse min-w-[320px]">
+              <table className="w-full text-left border-collapse min-w-[300px]">
                 <thead>
                   <tr className="border-b bg-gray-50 text-[10px] text-gray-400 uppercase">
-                    <th className="p-3">Estado / Detalle</th>
+                    <th className="p-3">Categoría / Detalle</th>
                     <th className="p-3">Monto</th>
                     <th className="p-3 text-center">Acción</th>
                   </tr>
@@ -466,26 +456,12 @@ export default function App() {
                     </tr>
                   )}
                   {monthTxs.map(t => (
-                    <tr key={t.id} className={`hover:bg-gray-50 transition-colors ${t.paid ? 'bg-emerald-50/40' : ''}`}>
+                    <tr key={t.id} className="hover:bg-gray-50">
                       <td className="p-3">
-                        <div className="flex items-center gap-2 mb-0.5">
-                          {/* Botón rápido de check de pago */}
-                          <button
-                            type="button"
-                            onClick={() => togglePaidStatus(t.id)}
-                            className={`px-2 py-0.5 rounded-full text-[10px] font-bold border transition-all ${
-                              t.paid 
-                                ? 'bg-emerald-600 text-white border-emerald-600' 
-                                : 'bg-gray-100 text-gray-500 border-gray-200 hover:border-gray-400'
-                            }`}
-                          >
-                            {t.paid ? '✓ Pagado' : 'Pendiente'}
-                          </button>
-                          <span className={`font-bold ${t.paid ? 'line-through text-gray-400' : 'text-gray-800'}`}>{t.category}</span>
-                        </div>
-                        <span className="text-gray-400 text-[11px] pl-1">{t.desc}</span>
+                        <span className="font-bold text-gray-800 block">{t.category}</span>
+                        <span className="text-gray-400 text-[11px]">{t.desc}</span>
                       </td>
-                      <td className={`p-3 font-bold whitespace-nowrap ${t.type === 'income' ? 'text-green-600' : t.paid ? 'text-gray-400 line-through' : 'text-red-600'}`}>
+                      <td className={`p-3 font-bold whitespace-nowrap ${t.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
                         {t.type === 'income' ? '+' : '-'}{formatCOP(t.amount)}
                       </td>
                       <td className="p-3 text-center whitespace-nowrap">
@@ -499,6 +475,7 @@ export default function App() {
             </div>
           </div>
 
+          {/* Balance Final del Mes */}
           <div className="bg-white p-4 rounded-2xl shadow-sm flex justify-between items-center border border-gray-100">
             <span className="text-xs font-bold text-gray-600 uppercase">Balance Neto ({currentMonth}):</span>
             <span className={`text-base font-bold ${balance >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
@@ -524,7 +501,7 @@ export default function App() {
               <label className="text-xs font-bold text-gray-600 uppercase tracking-wider">{editingGoalId ? 'Editando Meta' : 'Añadir Nueva Meta'}</label>
               {editingGoalId && <button type="button" onClick={cancelGoalEdit} className="text-xs text-red-500 font-bold underline">Cancelar</button>}
             </div>
-            <input type="text" placeholder="Nombre de la meta..." value={newGoalName} onChange={e => setNewGoalName(e.target.value)} className="p-3 border rounded-xl text-sm outline-none border-gray-200" />
+            <input type="text" placeholder="Nombre de la meta (ej. Viaje...)" value={newGoalName} onChange={e => setNewGoalName(e.target.value)} className="p-3 border rounded-xl text-sm outline-none border-gray-200" />
             <input type="text" inputMode="numeric" placeholder="Monto objetivo total" value={newGoalTarget} onChange={e => setNewGoalTarget(e.target.value)} className="p-3 border rounded-xl text-sm outline-none font-medium border-gray-200" />
             <input type="text" inputMode="numeric" placeholder="Monto actual ahorrado" value={newGoalCurrent} onChange={e => setNewGoalCurrent(e.target.value)} className="p-3 border rounded-xl text-sm outline-none font-medium border-gray-200" />
             <button type="submit" className={`py-3.5 rounded-xl font-bold text-sm text-white active:scale-95 transition-transform ${editingGoalId ? 'bg-green-600' : 'bg-emerald-600'}`}>{editingGoalId ? 'Actualizar Meta' : 'Crear Meta'}</button>
@@ -683,6 +660,7 @@ export default function App() {
         </>
       )}
 
+      {/* Modal / Ventana Detallada Móvil */}
       {modalType && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 z-50">
           <div className="bg-white rounded-2xl p-4 max-w-sm w-full shadow-2xl flex flex-col max-h-[80vh]">
