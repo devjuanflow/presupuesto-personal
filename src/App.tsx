@@ -304,15 +304,22 @@ export default function App() {
 
   const monthTxs = txs.filter(t => t.month === currentMonth);
   const totalIncome = monthTxs.filter(t => t.type === 'income').reduce((acc, t) => acc + t.amount, 0);
-  const totalGastosMes = monthTxs.filter(t => t.type === 'expense' && t.category !== 'Ahorro' && t.category !== 'Fondo de emergencia' && t.category !== 'Suscripciones' && !t.category.includes('Deudas') && !t.category.includes('financiad')).reduce((acc, t) => acc + t.amount, 0);
-  const totalAhorrosMes = monthTxs.filter(t => t.type === 'expense' && (t.category === 'Ahorro' || t.category === 'Fondo de emergencia')).reduce((acc, t) => acc + t.amount, 0);
-  const totalDeudasMes = monthTxs.filter(t => t.type === 'expense' && (t.category === 'Suscripciones' || t.category.includes('Deudas') || t.category.includes('financiad'))).reduce((acc, t) => acc + t.amount, 0);
+
+  // CÁLCULOS BRUTOS Y PENDIENTES REALES PARA LAS TARJETAS PRINCIPALES
+  const rawGastosMes = monthTxs.filter(t => t.type === 'expense' && t.category !== 'Ahorro' && t.category !== 'Fondo de emergencia' && t.category !== 'Suscripciones' && !t.category.includes('Deudas') && !t.category.includes('financiad'));
+  const rawAhorrosMes = monthTxs.filter(t => t.type === 'expense' && (t.category === 'Ahorro' || t.category === 'Fondo de emergencia'));
+  const rawDeudasMes = monthTxs.filter(t => t.type === 'expense' && (t.category === 'Suscripciones' || t.category.includes('Deudas') || t.category.includes('financiad')));
+
+  // Solo restamos de los totales principales lo que ya está pagado (mostrando el valor pendiente real)
+  const totalGastosMes = rawGastosMes.filter(t => !t.paid).reduce((acc, t) => acc + t.amount, 0);
+  const totalAhorrosMes = rawAhorrosMes.filter(t => !t.paid).reduce((acc, t) => acc + t.amount, 0);
+  const totalDeudasMes = rawDeudasMes.filter(t => !t.paid).reduce((acc, t) => acc + t.amount, 0);
   
   const totalPagadoMes = monthTxs.filter(t => t.type === 'expense' && t.paid).reduce((acc, t) => acc + t.amount, 0);
-  const totalPendienteMes = monthTxs.filter(t => t.type === 'expense' && !t.paid).reduce((acc, t) => acc + t.amount, 0);
+  const totalPendienteMes = totalGastosMes + totalAhorrosMes + totalDeudasMes;
 
-  const totalExpense = totalGastosMes + totalAhorrosMes + totalDeudasMes;
-  const balance = totalIncome - totalExpense;
+  const totalExpense = totalPendienteMes; // El balance calcula con base en lo que falta por pagar
+  const balance = totalIncome - (totalGastosMes + rawGastosMes.filter(t => t.paid).reduce((a, b) => a + b.amount, 0) + totalAhorrosMes + rawAhorrosMes.filter(t => t.paid).reduce((a, b) => a + b.amount, 0) + totalDeudasMes + rawDeudasMes.filter(t => t.paid).reduce((a, b) => a + b.amount, 0));
   const porcentajeAFavor = totalIncome > 0 ? Math.max(0, (balance / totalIncome) * 100) : 0;
 
   const filteredMonthTxs = monthTxs.filter(t => {
@@ -321,26 +328,24 @@ export default function App() {
     return matchesSearch && matchesStatus;
   });
 
-  const expenseCategoriesBreakdown = monthTxs
-    .filter(t => t.type === 'expense')
-    .reduce((acc: { [key: string]: number }, t) => {
-      acc[t.category] = (acc[t.category] || 0) + t.amount;
-      return acc;
-    }, {});
-
   const getModalTransactions = () => {
     if (modalType === 'Ingresos') return monthTxs.filter(t => t.type === 'income');
-    if (modalType === 'Gastos') return monthTxs.filter(t => t.type === 'expense' && t.category !== 'Ahorro' && t.category !== 'Fondo de emergencia' && t.category !== 'Suscripciones' && !t.category.includes('Deudas') && !t.category.includes('financiad'));
-    if (modalType === 'Ahorros') return monthTxs.filter(t => t.type === 'expense' && (t.category === 'Ahorro' || t.category === 'Fondo de emergencia'));
-    if (modalType === 'Deudas Mes') return monthTxs.filter(t => t.type === 'expense' && (t.category === 'Suscripciones' || t.category.includes('Deudas') || t.category.includes('financiad')));
+    if (modalType === 'Gastos') return rawGastosMes;
+    if (modalType === 'Ahorros') return rawAhorrosMes;
+    if (modalType === 'Deudas Mes') return rawDeudasMes;
     return [];
   };
 
-  // Cálculo de totales específicos para la ventana flotante de detalles (Bruto, Pagado y Pendiente)
   const modalItems = getModalTransactions();
   const modalTotalBruto = modalItems.reduce((acc, item) => acc + item.amount, 0);
   const modalTotalPagado = modalItems.filter(item => item.paid).reduce((acc, item) => acc + item.amount, 0);
   const modalTotalPendiente = modalItems.filter(item => !item.paid).reduce((acc, item) => acc + item.amount, 0);
+
+  const expenseCategoriesBreakdown = rawGastosMes
+    .reduce((acc: { [key: string]: number }, t) => {
+      acc[t.category] = (acc[t.category] || 0) + t.amount;
+      return acc;
+    }, {});
 
   const totalHistoricoAhorros = txs.filter(t => t.category === 'Ahorro').reduce((acc, t) => acc + t.amount, 0);
   const totalHistoricoEmergencia = txs.filter(t => t.category === 'Fondo de emergencia').reduce((acc, t) => acc + t.amount, 0);
@@ -498,21 +503,22 @@ export default function App() {
               </select>
             </div>
 
+            {/* Tarjetas Principales muestran el valor pendiente real */}
             <div className="grid grid-cols-2 gap-2 mb-3">
               <div onClick={() => setModalType('Ingresos')} className={`p-3 rounded-xl shadow-sm text-center border cursor-pointer transition-all ${darkMode ? 'bg-gray-900 border-gray-800 hover:bg-gray-800' : 'bg-white border-gray-100 hover:bg-green-50/20'}`}>
                 <p className="text-[10px] opacity-60 font-semibold uppercase">Ingresos (Ver 🔍)</p>
                 <p className="text-sm font-bold text-green-500 mt-1 truncate">{formatCOP(totalIncome)}</p>
               </div>
               <div onClick={() => setModalType('Gastos')} className={`p-3 rounded-xl shadow-sm text-center border cursor-pointer transition-all ${darkMode ? 'bg-gray-900 border-gray-800 hover:bg-gray-800' : 'bg-white border-gray-100 hover:bg-red-50/20'}`}>
-                <p className="text-[10px] opacity-60 font-semibold uppercase">Gastos (Ver 🔍)</p>
+                <p className="text-[10px] opacity-60 font-semibold uppercase">Gastos Pend. (Ver 🔍)</p>
                 <p className="text-sm font-bold text-red-500 mt-1 truncate">{formatCOP(totalGastosMes)}</p>
               </div>
               <div onClick={() => setModalType('Ahorros')} className={`p-3 rounded-xl shadow-sm text-center border cursor-pointer transition-all ${darkMode ? 'bg-gray-900 border-gray-800 hover:bg-gray-800' : 'bg-white border-gray-100 hover:bg-emerald-50/20'}`}>
-                <p className="text-[10px] opacity-60 font-semibold uppercase">Ahorros (Ver 🔍)</p>
+                <p className="text-[10px] opacity-60 font-semibold uppercase">Ahorros Pend. (Ver 🔍)</p>
                 <p className="text-sm font-bold text-emerald-500 mt-1 truncate">{formatCOP(totalAhorrosMes)}</p>
               </div>
               <div onClick={() => setModalType('Deudas Mes')} className={`p-3 rounded-xl shadow-sm text-center border cursor-pointer transition-all ${darkMode ? 'bg-gray-900 border-gray-800 hover:bg-gray-800' : 'bg-white border-gray-100 hover:bg-orange-50/20'}`}>
-                <p className="text-[10px] opacity-60 font-semibold uppercase">Deudas Mes (Ver 🔍)</p>
+                <p className="text-[10px] opacity-60 font-semibold uppercase">Deudas Pend. (Ver 🔍)</p>
                 <p className="text-sm font-bold text-orange-500 mt-1 truncate">{formatCOP(totalDeudasMes)}</p>
               </div>
             </div>
@@ -656,7 +662,7 @@ export default function App() {
 
             {Object.keys(expenseCategoriesBreakdown).length > 0 && (
               <div className={`p-4 rounded-2xl shadow-sm border mb-4 transition-colors ${darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`}>
-                <h3 className="text-xs font-bold uppercase tracking-wider opacity-70 mb-3">📊 Distribución de Gastos</h3>
+                <h3 className="text-xs font-bold uppercase tracking-wider opacity-70 mb-3">📊 Distribución de Gastos (Pendientes)</h3>
                 <div className="space-y-2.5">
                   {Object.entries(expenseCategoriesBreakdown).map(([cat, val]) => {
                     const percentage = totalExpense > 0 ? (val / totalExpense) * 100 : 0;
@@ -985,7 +991,6 @@ export default function App() {
                 )}
               </div>
 
-              {/* Pie del modal con desglose dinámico: Total, Pagado y Pendiente */}
               <div className={`mt-3 pt-3 border-t flex flex-col gap-1.5 text-xs ${darkMode ? 'border-gray-800' : 'border-gray-100'}`}>
                 <div className="flex justify-between items-center">
                   <span className="opacity-60">Total Bruto:</span>
@@ -998,7 +1003,7 @@ export default function App() {
                       <span className="font-bold">{formatCOP(modalTotalPagado)}</span>
                     </div>
                     <div className="flex justify-between items-center text-orange-500">
-                      <span>⏳ Pendiente:</span>
+                      <span>⏳ Saldo Pendiente:</span>
                       <span className="font-bold">{formatCOP(modalTotalPendiente)}</span>
                     </div>
                   </>
