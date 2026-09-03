@@ -66,7 +66,6 @@ export default function App() {
   const [budgetDate, setBudgetDate] = useState(() => localStorage.getItem('budget_date') || '2026');
   const [currentMonth, setCurrentMonth] = useState('Septiembre');
 
-  // Nuevos estados para filtros y búsqueda
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'paid'>('all');
   
@@ -93,13 +92,11 @@ export default function App() {
 
   const [modalType, setModalType] = useState<DetailModalType>(null);
 
-  // Estados Formulario Metas
   const [newGoalName, setNewGoalName] = useState('');
   const [newGoalTarget, setNewGoalTarget] = useState('');
   const [newGoalCurrent, setNewGoalCurrent] = useState('');
   const [editingGoalId, setEditingGoalId] = useState<string | null>(null);
 
-  // Estados Formulario Deudas
   const [newDebtName, setNewDebtName] = useState('');
   const [newDebtTotal, setNewDebtTotal] = useState('');
   const [newDebtPaid, setNewDebtPaid] = useState('');
@@ -109,7 +106,6 @@ export default function App() {
   const [newDebtDueDate, setNewDebtDueDate] = useState(DUE_DATE_OPTIONS[3]);
   const [editingDebtId, setEditingDebtId] = useState<string | null>(null);
   
-  // Estados Formulario Presupuesto
   const [selectedCat, setSelectedCat] = useState(CATEGORIES[0]);
   const [desc, setDesc] = useState('');
   const [amount, setAmount] = useState('');
@@ -249,20 +245,21 @@ export default function App() {
   const totalGastosMes = monthTxs.filter(t => t.type === 'expense' && t.category !== 'Ahorro' && t.category !== 'Fondo de emergencia' && t.category !== 'Suscripciones' && !t.category.includes('Deudas') && !t.category.includes('financiad')).reduce((acc, t) => acc + t.amount, 0);
   const totalAhorrosMes = monthTxs.filter(t => t.type === 'expense' && (t.category === 'Ahorro' || t.category === 'Fondo de emergencia')).reduce((acc, t) => acc + t.amount, 0);
   const totalDeudasMes = monthTxs.filter(t => t.type === 'expense' && (t.category === 'Suscripciones' || t.category.includes('Deudas') || t.category.includes('financiad'))).reduce((acc, t) => acc + t.amount, 0);
+  
+  // Usado activamente en la tarjeta de control de pagos
   const totalPagadoMes = monthTxs.filter(t => t.type === 'expense' && t.paid).reduce((acc, t) => acc + t.amount, 0);
+  const totalPendienteMes = monthTxs.filter(t => t.type === 'expense' && !t.paid).reduce((acc, t) => acc + t.amount, 0);
 
   const totalExpense = totalGastosMes + totalAhorrosMes + totalDeudasMes;
   const balance = totalIncome - totalExpense;
   const porcentajeAFavor = totalIncome > 0 ? Math.max(0, (balance / totalIncome) * 100) : 0;
 
-  // Filtrado avanzado para la tabla del mes
   const filteredMonthTxs = monthTxs.filter(t => {
     const matchesSearch = t.desc.toLowerCase().includes(searchTerm.toLowerCase()) || t.category.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' ? true : statusFilter === 'paid' ? t.paid : !t.paid;
     return matchesSearch && matchesStatus;
   });
 
-  // Datos para gráficos visuales de categorías en el mes
   const expenseCategoriesBreakdown = monthTxs
     .filter(t => t.type === 'expense')
     .reduce((acc: { [key: string]: number }, t) => {
@@ -299,7 +296,6 @@ export default function App() {
   const grandAnnualDebts = annualSummary.reduce((acc, cur) => acc + cur.debts, 0);
   const grandAnnualNet = annualSummary.reduce((acc, cur) => acc + cur.net, 0);
 
-  // Comparativa con el mes anterior
   const currentMonthIndex = MONTHS.indexOf(currentMonth);
   const prevMonthName = currentMonthIndex > 0 ? MONTHS[currentMonthIndex - 1] : null;
   const prevMonthTotalExpense = prevMonthName ? annualSummary.find(s => s.month === prevMonthName)?.expense || 0 : 0;
@@ -310,7 +306,6 @@ export default function App() {
       
       <div className="max-w-md mx-auto p-3 sm:p-4">
         
-        {/* Cabecera y Botón de Modo Oscuro */}
         <div className={`p-3.5 rounded-2xl shadow-sm mb-3 flex flex-col gap-2 border transition-colors ${darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`}>
           <div className="flex justify-between items-center">
             <input
@@ -340,7 +335,6 @@ export default function App() {
           </div>
         </div>
 
-        {/* Pestañas de Navegación */}
         <div className="grid grid-cols-2 gap-2 mb-3">
           <button
             onClick={() => setActiveTab('budget')}
@@ -368,7 +362,6 @@ export default function App() {
           </button>
         </div>
 
-        {/* Botones Respaldo */}
         <div className="flex gap-2 mb-4">
           <button onClick={exportData} className={`flex-1 py-2 px-3 rounded-xl text-xs font-semibold shadow-sm active:scale-95 transition-transform ${darkMode ? 'bg-gray-800 text-gray-200' : 'bg-gray-800 text-white'}`}>
             📥 Guardar Respaldo
@@ -394,7 +387,6 @@ export default function App() {
               </select>
             </div>
 
-            {/* Tarjetas Interactivas */}
             <div className="grid grid-cols-2 gap-2 mb-3">
               <div onClick={() => setModalType('Ingresos')} className={`p-3 rounded-xl shadow-sm text-center border cursor-pointer transition-all ${darkMode ? 'bg-gray-900 border-gray-800 hover:bg-gray-800' : 'bg-white border-gray-100 hover:bg-green-50/20'}`}>
                 <p className="text-[10px] opacity-60 font-semibold uppercase">Ingresos (Ver 🔍)</p>
@@ -414,7 +406,18 @@ export default function App() {
               </div>
             </div>
 
-            {/* Comparativa con mes anterior */}
+            {/* Tarjeta de Control Activa: Pagado vs Pendiente */}
+            <div className={`p-3.5 rounded-xl shadow-sm border mb-3 grid grid-cols-2 gap-2 text-center transition-colors ${darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`}>
+              <div className="border-r border-gray-200 dark:border-gray-800 pr-2">
+                <p className="text-[10px] opacity-60 font-bold uppercase">✅ Efectivo Pagado</p>
+                <p className="text-xs font-bold text-emerald-500 mt-1">{formatCOP(totalPagadoMes)}</p>
+              </div>
+              <div>
+                <p className="text-[10px] opacity-60 font-bold uppercase">⏳ Saldo Pendiente</p>
+                <p className="text-xs font-bold text-orange-500 mt-1">{formatCOP(totalPendienteMes)}</p>
+              </div>
+            </div>
+
             {prevMonthName && (
               <div className={`p-3 rounded-xl shadow-sm border mb-3 text-xs flex justify-between items-center ${darkMode ? 'bg-gray-900 border-gray-800 text-gray-300' : 'bg-white border-gray-100 text-gray-600'}`}>
                 <span>📊 Comparativa vs <strong>{prevMonthName}</strong>:</span>
@@ -429,7 +432,6 @@ export default function App() {
               <span className="text-base font-bold">{porcentajeAFavor.toFixed(1)}%</span>
             </div>
 
-            {/* Formulario */}
             <form onSubmit={handleSubmit} className={`p-4 rounded-2xl shadow-sm mb-5 flex flex-col gap-3 border transition-colors ${darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} ${editingId ? 'border-blue-500' : ''}`}>
               <div className="flex justify-between items-center">
                 <label className="text-xs font-bold uppercase tracking-wider opacity-80">
@@ -477,7 +479,6 @@ export default function App() {
               </button>
             </form>
 
-            {/* Barra de Búsqueda y Filtros de Estado */}
             <div className="flex flex-col gap-2 mb-3">
               <input
                 type="text"
@@ -493,7 +494,6 @@ export default function App() {
               </div>
             </div>
 
-            {/* Tabla de Registros */}
             <h2 className="text-xs font-bold opacity-60 uppercase tracking-wider mb-2">Registros de {currentMonth}</h2>
             <div className={`rounded-2xl shadow-sm overflow-hidden mb-4 border transition-colors ${darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`}>
               <div className="overflow-x-auto">
@@ -544,7 +544,6 @@ export default function App() {
               </div>
             </div>
 
-            {/* Distribución Visual de Gastos por Categoría */}
             {Object.keys(expenseCategoriesBreakdown).length > 0 && (
               <div className={`p-4 rounded-2xl shadow-sm border mb-4 transition-colors ${darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`}>
                 <h3 className="text-xs font-bold uppercase tracking-wider opacity-70 mb-3">📊 Distribución de Gastos</h3>
