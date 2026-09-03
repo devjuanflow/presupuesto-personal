@@ -28,12 +28,17 @@ interface Debt {
   dueDate: string;
 }
 
+interface CustomCategory {
+  name: string;
+  type: 'income' | 'expense';
+}
+
 const MONTHS = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
 ];
 
-const CATEGORIES = [
+const DEFAULT_CATEGORIES: CustomCategory[] = [
   { name: 'Salario / Ingreso Fijo', type: 'income' },
   { name: 'Ingresos Adicionales', type: 'income' },
   { name: 'Ahorro', type: 'expense' },
@@ -60,11 +65,24 @@ const DUE_DATE_OPTIONS = [
 type DetailModalType = 'Ingresos' | 'Gastos' | 'Ahorros' | 'Deudas Mes' | null;
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'budget' | 'savings' | 'debts' | 'annual'>('budget');
+  const [activeTab, setActiveTab] = useState<'budget' | 'savings' | 'debts' | 'annual' | 'settings'>('budget');
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('dark_mode') === 'true');
   const [budgetName, setBudgetName] = useState(() => localStorage.getItem('budget_name') || 'Mi Presupuesto');
   const [budgetDate, setBudgetDate] = useState(() => localStorage.getItem('budget_date') || '2026');
   const [currentMonth, setCurrentMonth] = useState('Septiembre');
+
+  // Seguridad PIN
+  const [savedPin, setSavedPin] = useState(() => localStorage.getItem('app_pin') || '');
+  const [enteredPin, setEnteredPin] = useState('');
+  const [isLocked, setIsLocked] = useState(() => !!localStorage.getItem('app_pin'));
+
+  // Categorías personalizadas
+  const [categories, setCategories] = useState<CustomCategory[]>(() => {
+    const saved = localStorage.getItem('custom_categories');
+    return saved ? JSON.parse(saved) : DEFAULT_CATEGORIES;
+  });
+  const [newCatName, setNewCatName] = useState('');
+  const [newCatType, setNewCatType] = useState<'income' | 'expense'>('expense');
 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'paid'>('all');
@@ -106,7 +124,7 @@ export default function App() {
   const [newDebtDueDate, setNewDebtDueDate] = useState(DUE_DATE_OPTIONS[3]);
   const [editingDebtId, setEditingDebtId] = useState<string | null>(null);
   
-  const [selectedCat, setSelectedCat] = useState(CATEGORIES[0]);
+  const [selectedCat, setSelectedCat] = useState<CustomCategory>(categories[0]);
   const [desc, setDesc] = useState('');
   const [amount, setAmount] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -119,6 +137,31 @@ export default function App() {
   useEffect(() => { localStorage.setItem('budget_name', budgetName); }, [budgetName]);
   useEffect(() => { localStorage.setItem('budget_date', budgetDate); }, [budgetDate]);
   useEffect(() => { localStorage.setItem('dark_mode', String(darkMode)); }, [darkMode]);
+  useEffect(() => { localStorage.setItem('custom_categories', JSON.stringify(categories)); }, [categories]);
+
+  // Manejo de PIN de seguridad
+  const handleSetPin = (pinValue: string) => {
+    if (pinValue.length === 4) {
+      localStorage.setItem('app_pin', pinValue);
+      setSavedPin(pinValue);
+      alert('¡PIN de seguridad configurado con éxito!');
+    } else {
+      localStorage.removeItem('app_pin');
+      setSavedPin('');
+      alert('PIN desactivado.');
+    }
+  };
+
+  const handleUnlock = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (enteredPin === savedPin) {
+      setIsLocked(false);
+      setEnteredPin('');
+    } else {
+      alert('PIN incorrecto');
+      setEnteredPin('');
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -133,7 +176,7 @@ export default function App() {
     } else {
       setTxs([{ id: Date.now().toString(), month: currentMonth, category: selectedCat.name, type: selectedCat.type as 'income' | 'expense', desc: desc || selectedCat.name, amount: cleanAmount, paid: false }, ...txs]);
     }
-    setDesc(''); setAmount(''); setSelectedCat(CATEGORIES[0]);
+    setDesc(''); setAmount(''); setSelectedCat(categories[0]);
   };
 
   const togglePaidStatus = (id: string) => {
@@ -143,13 +186,35 @@ export default function App() {
   const startEdit = (t: Transaction) => {
     setEditingId(t.id);
     setCurrentMonth(t.month);
-    setSelectedCat(CATEGORIES.find(c => c.name === t.category) || CATEGORIES[0]);
+    setSelectedCat(categories.find(c => c.name === t.category) || categories[0]);
     setDesc(t.desc);
     setAmount(t.amount.toString());
   };
 
   const cancelEdit = () => { setEditingId(null); setDesc(''); setAmount(''); };
   const deleteTx = (id: string) => { if (editingId === id) cancelEdit(); setTxs(txs.filter(t => t.id !== id)); };
+
+  // Crear categoría personalizada
+  const handleAddCategory = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCatName.trim()) return;
+    if (categories.some(c => c.name.toLowerCase() === newCatName.trim().toLowerCase())) {
+      alert('Esta categoría ya existe.');
+      return;
+    }
+    const updated = [...categories, { name: newCatName.trim(), type: newCatType }];
+    setCategories(updated);
+    setNewCatName('');
+    alert('¡Categoría creada con éxito!');
+  };
+
+  const handleDeleteCategory = (catName: string) => {
+    if (categories.length <= 2) {
+      alert('Debes mantener al menos algunas categorías.');
+      return;
+    }
+    setCategories(categories.filter(c => c.name !== catName));
+  };
 
   const handleGoalSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -206,7 +271,7 @@ export default function App() {
   const deleteDebt = (id: string) => { if (editingDebtId === id) cancelDebtEdit(); setDebts(debts.filter(d => d.id !== id)); };
 
   const exportData = () => {
-    const backup = { budgetName, budgetDate, txs, goals, debts };
+    const backup = { budgetName, budgetDate, txs, goals, debts, categories };
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backup, null, 2));
     const downloadAnchor = document.createElement('a');
     downloadAnchor.setAttribute("href", dataStr);
@@ -229,6 +294,7 @@ export default function App() {
             if (Array.isArray(parsedData.txs)) setTxs(parsedData.txs);
             if (Array.isArray(parsedData.goals)) setGoals(parsedData.goals);
             if (Array.isArray(parsedData.debts)) setDebts(parsedData.debts);
+            if (Array.isArray(parsedData.categories)) setCategories(parsedData.categories);
             if (parsedData.budgetName) setBudgetName(parsedData.budgetName);
             if (parsedData.budgetDate) setBudgetDate(parsedData.budgetDate);
           }
@@ -246,7 +312,6 @@ export default function App() {
   const totalAhorrosMes = monthTxs.filter(t => t.type === 'expense' && (t.category === 'Ahorro' || t.category === 'Fondo de emergencia')).reduce((acc, t) => acc + t.amount, 0);
   const totalDeudasMes = monthTxs.filter(t => t.type === 'expense' && (t.category === 'Suscripciones' || t.category.includes('Deudas') || t.category.includes('financiad'))).reduce((acc, t) => acc + t.amount, 0);
   
-  // Usado activamente en la tarjeta de control de pagos
   const totalPagadoMes = monthTxs.filter(t => t.type === 'expense' && t.paid).reduce((acc, t) => acc + t.amount, 0);
   const totalPendienteMes = monthTxs.filter(t => t.type === 'expense' && !t.paid).reduce((acc, t) => acc + t.amount, 0);
 
@@ -301,6 +366,46 @@ export default function App() {
   const prevMonthTotalExpense = prevMonthName ? annualSummary.find(s => s.month === prevMonthName)?.expense || 0 : 0;
   const expenseDiffPercent = prevMonthTotalExpense > 0 ? ((totalGastosMes - prevMonthTotalExpense) / prevMonthTotalExpense) * 100 : 0;
 
+  // Comprobador inteligente de alerta de vencimiento (calcula días restantes respecto al día actual del mes)
+  const todayDay = new Date().getDate();
+  const getDebtAlert = (dueDateStr: string) => {
+    if (dueDateStr.includes('Fin')) return false;
+    const matchDay = parseInt(dueDateStr.split(' ')[0], 10);
+    if (!isNaN(matchDay)) {
+      const diff = matchDay - todayDay;
+      return diff >= 0 && diff <= 3; // Alerta si faltan 3 días o menos
+    }
+    return false;
+  };
+
+  // Pantalla de bloqueo si hay PIN configurado
+  if (isLocked && savedPin) {
+    return (
+      <div className={`min-h-screen flex items-center justify-center p-4 font-sans ${darkMode ? 'bg-gray-950 text-white' : 'bg-gray-100 text-gray-900'}`}>
+        <div className={`p-6 rounded-3xl shadow-2xl max-w-sm w-full border text-center ${darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}`}>
+          <div className="text-4xl mb-3">🔒</div>
+          <h2 className="text-lg font-bold mb-1">Aplicación Protegida</h2>
+          <p className="text-xs opacity-60 mb-6">Ingresa tu PIN de 4 dígitos para acceder a tus finanzas.</p>
+          <form onSubmit={handleUnlock} className="flex flex-col gap-3">
+            <input
+              type="password"
+              inputMode="numeric"
+              maxLength={4}
+              placeholder="••••"
+              value={enteredPin}
+              onChange={e => setEnteredPin(e.target.value)}
+              className={`p-3 text-center text-2xl tracking-widest border rounded-xl outline-none font-bold ${darkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-gray-50 border-gray-300 text-gray-800'}`}
+              autoFocus
+            />
+            <button type="submit" className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold text-sm shadow-sm active:scale-95 transition-transform">
+              Desbloquear
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={`min-h-screen font-sans relative pb-12 transition-colors duration-300 ${darkMode ? 'bg-gray-950 text-gray-100' : 'bg-gray-50 text-gray-900'}`}>
       
@@ -320,7 +425,7 @@ export default function App() {
               className={`ml-2 p-2 rounded-xl text-xs font-bold border transition-transform active:scale-95 ${darkMode ? 'bg-gray-800 border-gray-700 text-amber-400' : 'bg-gray-100 border-gray-200 text-gray-700'}`}
               title="Cambiar Modo Oscuro/Claro"
             >
-              {darkMode ? '☀️ Claro' : '🌙 Oscuro'}
+              {darkMode ? '☀️' : '🌙'}
             </button>
           </div>
           <div className="flex justify-between items-center text-xs opacity-75">
@@ -335,39 +440,46 @@ export default function App() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 mb-3">
+        {/* Pestañas de Navegación (incluyendo Ajustes / Seguridad) */}
+        <div className="grid grid-cols-5 gap-1.5 mb-3">
           <button
             onClick={() => setActiveTab('budget')}
-            className={`py-2.5 px-2 rounded-xl font-bold text-xs shadow-sm transition-all ${activeTab === 'budget' ? 'bg-blue-600 text-white shadow-blue-500/30 shadow-md' : darkMode ? 'bg-gray-900 text-gray-300 border border-gray-800' : 'bg-white text-gray-700 border border-gray-100'}`}
+            className={`py-2 px-1 rounded-xl font-bold text-[11px] shadow-sm transition-all ${activeTab === 'budget' ? 'bg-blue-600 text-white shadow-blue-500/30 shadow-md' : darkMode ? 'bg-gray-900 text-gray-300 border border-gray-800' : 'bg-white text-gray-700 border border-gray-100'}`}
           >
-            📊 Presupuesto
+            📊 Presup.
           </button>
           <button
             onClick={() => setActiveTab('savings')}
-            className={`py-2.5 px-2 rounded-xl font-bold text-xs shadow-sm transition-all ${activeTab === 'savings' ? 'bg-emerald-600 text-white shadow-emerald-500/30 shadow-md' : darkMode ? 'bg-gray-900 text-gray-300 border border-gray-800' : 'bg-white text-gray-700 border border-gray-100'}`}
+            className={`py-2 px-1 rounded-xl font-bold text-[11px] shadow-sm transition-all ${activeTab === 'savings' ? 'bg-emerald-600 text-white shadow-emerald-500/30 shadow-md' : darkMode ? 'bg-gray-900 text-gray-300 border border-gray-800' : 'bg-white text-gray-700 border border-gray-100'}`}
           >
             🎯 Ahorros
           </button>
           <button
             onClick={() => setActiveTab('debts')}
-            className={`py-2.5 px-2 rounded-xl font-bold text-xs shadow-sm transition-all ${activeTab === 'debts' ? 'bg-orange-600 text-white shadow-orange-500/30 shadow-md' : darkMode ? 'bg-gray-900 text-gray-300 border border-gray-800' : 'bg-white text-gray-700 border border-gray-100'}`}
+            className={`py-2 px-1 rounded-xl font-bold text-[11px] shadow-sm transition-all ${activeTab === 'debts' ? 'bg-orange-600 text-white shadow-orange-500/30 shadow-md' : darkMode ? 'bg-gray-900 text-gray-300 border border-gray-800' : 'bg-white text-gray-700 border border-gray-100'}`}
           >
-            💳 Deudas Reales
+            💳 Deudas
           </button>
           <button
             onClick={() => setActiveTab('annual')}
-            className={`py-2.5 px-2 rounded-xl font-bold text-xs shadow-sm transition-all ${activeTab === 'annual' ? 'bg-purple-600 text-white shadow-purple-500/30 shadow-md' : darkMode ? 'bg-gray-900 text-gray-300 border border-gray-800' : 'bg-white text-gray-700 border border-gray-100'}`}
+            className={`py-2 px-1 rounded-xl font-bold text-[11px] shadow-sm transition-all ${activeTab === 'annual' ? 'bg-purple-600 text-white shadow-purple-500/30 shadow-md' : darkMode ? 'bg-gray-900 text-gray-300 border border-gray-800' : 'bg-white text-gray-700 border border-gray-100'}`}
           >
-            📈 Resumen Anual
+            📈 Anual
+          </button>
+          <button
+            onClick={() => setActiveTab('settings')}
+            className={`py-2 px-1 rounded-xl font-bold text-[11px] shadow-sm transition-all ${activeTab === 'settings' ? 'bg-gray-800 text-white shadow-gray-500/30 shadow-md' : darkMode ? 'bg-gray-900 text-gray-300 border border-gray-800' : 'bg-white text-gray-700 border border-gray-100'}`}
+          >
+            ⚙️ Ajustes
           </button>
         </div>
 
         <div className="flex gap-2 mb-4">
           <button onClick={exportData} className={`flex-1 py-2 px-3 rounded-xl text-xs font-semibold shadow-sm active:scale-95 transition-transform ${darkMode ? 'bg-gray-800 text-gray-200' : 'bg-gray-800 text-white'}`}>
-            📥 Guardar Respaldo
+            📥 Respaldo
           </button>
           <button onClick={() => fileInputRef.current?.click()} className={`flex-1 py-2 px-3 rounded-xl text-xs font-semibold shadow-sm active:scale-95 transition-transform ${darkMode ? 'bg-gray-700 text-gray-200' : 'bg-gray-700 text-white'}`}>
-            📂 Abrir Archivo
+            📂 Restaurar
           </button>
           <input type="file" ref={fileInputRef} onChange={importData} accept=".json" className="hidden" />
         </div>
@@ -406,7 +518,6 @@ export default function App() {
               </div>
             </div>
 
-            {/* Tarjeta de Control Activa: Pagado vs Pendiente */}
             <div className={`p-3.5 rounded-xl shadow-sm border mb-3 grid grid-cols-2 gap-2 text-center transition-colors ${darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`}>
               <div className="border-r border-gray-200 dark:border-gray-800 pr-2">
                 <p className="text-[10px] opacity-60 font-bold uppercase">✅ Efectivo Pagado</p>
@@ -445,12 +556,12 @@ export default function App() {
               <select
                 value={selectedCat.name}
                 onChange={e => {
-                  const cat = CATEGORIES.find(c => c.name === e.target.value);
+                  const cat = categories.find(c => c.name === e.target.value);
                   if (cat) setSelectedCat(cat);
                 }}
                 className={`p-3 border rounded-xl text-sm font-medium outline-none transition-colors ${darkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-200 text-gray-800'}`}
               >
-                {CATEGORIES.map(cat => (
+                {categories.map(cat => (
                   <option key={cat.name} value={cat.name}>
                     {cat.name} ({cat.type === 'income' ? 'Ingreso' : 'Destino'})
                   </option>
@@ -663,7 +774,7 @@ export default function App() {
               <button type="submit" className={`py-3.5 rounded-xl font-bold text-sm text-white active:scale-95 transition-transform ${editingDebtId ? 'bg-green-600' : 'bg-orange-600'}`}>{editingDebtId ? 'Actualizar Deuda' : 'Guardar Deuda'}</button>
             </form>
 
-            <h2 className="text-xs font-bold opacity-60 uppercase tracking-wider mb-2">Control de Deudas</h2>
+            <h2 className="text-xs font-bold opacity-60 uppercase tracking-wider mb-2">Control de Deudas y Alertas de Vencimiento</h2>
             <div className="flex flex-col gap-3 mb-5">
               {debts.length === 0 && <p className="text-sm opacity-40 text-center py-6 rounded-2xl border transition-colors">No hay deudas registradas</p>}
               {debts.map(debt => {
@@ -671,9 +782,15 @@ export default function App() {
                 const remainingInstallments = Math.max(0, debt.totalInstallments - debt.paidInstallments);
                 const progress = debt.totalAmount > 0 ? Math.min(100, (debt.paidAmount / debt.totalAmount) * 100) : 0;
                 const isPaidOff = remaining === 0 || remainingInstallments === 0;
+                const showAlert = getDebtAlert(debt.dueDate);
 
                 return (
-                  <div key={debt.id} className={`p-4 rounded-2xl shadow-sm border transition-colors flex flex-col gap-3 ${darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`}>
+                  <div key={debt.id} className={`p-4 rounded-2xl shadow-sm border transition-colors flex flex-col gap-3 ${darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} ${showAlert ? 'border-red-500/80 ring-1 ring-red-500/50' : ''}`}>
+                    {showAlert && (
+                      <div className="bg-red-500/10 border border-red-500/30 text-red-500 text-[11px] font-bold p-2 rounded-xl flex items-center gap-1.5 animate-pulse">
+                        <span>⚠️ ¡Alerta! Esta deuda vence pronto ({debt.dueDate})</span>
+                      </div>
+                    )}
                     <div className="flex justify-between items-center">
                       <div>
                         <span className="font-bold text-sm block">{debt.name}</span>
@@ -690,7 +807,7 @@ export default function App() {
                       <div>Total: <strong className="block">{formatCOP(debt.totalAmount)}</strong></div>
                       <div>Pagado: <strong className="text-emerald-500 block">{formatCOP(debt.paidAmount)}</strong></div>
                       <div>Cuota: <strong className="text-blue-400 block">{formatCOP(debt.monthlyPayment)}</strong></div>
-                      <div>Plazo: <strong className="text-purple-400 block">{debt.paidInstallments}/{debt.totalInstallments} pagadas</strong></div>
+                      <div>Corte: <strong className="text-purple-400 block">{debt.dueDate}</strong></div>
                     </div>
                     <div className={`w-full h-2.5 rounded-full overflow-hidden ${darkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
                       <div className="bg-emerald-500 h-full rounded-full transition-all duration-300" style={{ width: `${progress}%` }}></div>
@@ -708,7 +825,7 @@ export default function App() {
               })}
             </div>
           </>
-        ) : (
+        ) : activeTab === 'annual' ? (
           <>
             <div className={`p-4 rounded-2xl shadow-sm border mb-4 transition-colors ${darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`}>
               <h2 className="text-sm font-bold mb-1">Balance Anual ({budgetDate})</h2>
@@ -745,6 +862,78 @@ export default function App() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Pestaña de Ajustes: Seguridad PIN y Categorías Personalizadas */}
+            <div className={`p-4 rounded-2xl shadow-sm border mb-4 transition-colors ${darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`}>
+              <h2 className="text-sm font-bold mb-1">🔒 Seguridad y Bloqueo por PIN</h2>
+              <p className="text-[11px] opacity-60 mb-3">Protege tu información financiera con un PIN de 4 dígitos.</p>
+              
+              <div className="flex gap-2">
+                <input
+                  type="password"
+                  inputMode="numeric"
+                  maxLength={4}
+                  placeholder="Nuevo PIN (4 dígitos)"
+                  id="pinInput"
+                  className={`p-3 border rounded-xl text-sm outline-none flex-1 ${darkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-gray-50 border-gray-200 text-gray-800'}`}
+                />
+                <button
+                  onClick={() => {
+                    const el = document.getElementById('pinInput') as HTMLInputElement;
+                    if (el) handleSetPin(el.value);
+                  }}
+                  className="bg-blue-600 text-white px-4 rounded-xl font-bold text-xs active:scale-95 transition-transform"
+                >
+                  Guardar PIN
+                </button>
+              </div>
+              {savedPin && <p className="text-[11px] text-emerald-500 font-bold mt-2">✓ PIN de seguridad activo actualmente.</p>}
+            </div>
+
+            <div className={`p-4 rounded-2xl shadow-sm border mb-4 transition-colors ${darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`}>
+              <h2 className="text-sm font-bold mb-1">🏷️ Gestionar Categorías Personalizadas</h2>
+              <p className="text-[11px] opacity-60 mb-3">Crea nuevas categorías adaptadas a tus necesidades.</p>
+
+              <form onSubmit={handleAddCategory} className="flex flex-col gap-2.5 mb-4">
+                <input
+                  type="text"
+                  placeholder="Nombre de la categoría..."
+                  value={newCatName}
+                  onChange={e => setNewCatName(e.target.value)}
+                  className={`p-3 border rounded-xl text-sm outline-none ${darkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-gray-50 border-gray-200 text-gray-800'}`}
+                />
+                <select
+                  value={newCatType}
+                  onChange={e => setNewCatType(e.target.value as 'income' | 'expense')}
+                  className={`p-3 border rounded-xl text-xs outline-none ${darkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-gray-50 border-gray-200 text-gray-800'}`}
+                >
+                  <option value="expense">Tipo: Gasto / Destino</option>
+                  <option value="income">Tipo: Ingreso</option>
+                </select>
+                <button type="submit" className="bg-emerald-600 text-white py-3 rounded-xl font-bold text-xs shadow-sm active:scale-95 transition-transform">
+                  + Añadir Categoría
+                </button>
+              </form>
+
+              <h3 className="text-xs font-bold uppercase opacity-60 mb-2">Categorías Actuales</h3>
+              <div className="max-h-48 overflow-y-auto space-y-1.5 divide-y divide-gray-100 dark:divide-gray-800">
+                {categories.map(c => (
+                  <div key={c.name} className="pt-2 flex justify-between items-center text-xs">
+                    <div>
+                      <span className="font-bold">{c.name}</span>
+                      <span className={`ml-2 text-[10px] px-1.5 py-0.5 rounded ${c.type === 'income' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                        {c.type === 'income' ? 'Ingreso' : 'Gasto'}
+                      </span>
+                    </div>
+                    <button onClick={() => handleDeleteCategory(c.name)} className="text-red-400 text-xs font-bold px-2 py-1 bg-red-500/10 rounded-lg">
+                      ✕
+                    </button>
+                  </div>
+                ))}
               </div>
             </div>
           </>
