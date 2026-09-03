@@ -71,12 +71,10 @@ export default function App() {
   const [budgetDate, setBudgetDate] = useState(() => localStorage.getItem('budget_date') || '2026');
   const [currentMonth, setCurrentMonth] = useState('Septiembre');
 
-  // Seguridad PIN
   const [savedPin, setSavedPin] = useState(() => localStorage.getItem('app_pin') || '');
   const [enteredPin, setEnteredPin] = useState('');
   const [isLocked, setIsLocked] = useState(() => !!localStorage.getItem('app_pin'));
 
-  // Categorías personalizadas
   const [categories, setCategories] = useState<CustomCategory[]>(() => {
     const saved = localStorage.getItem('custom_categories');
     return saved ? JSON.parse(saved) : DEFAULT_CATEGORIES;
@@ -139,7 +137,6 @@ export default function App() {
   useEffect(() => { localStorage.setItem('dark_mode', String(darkMode)); }, [darkMode]);
   useEffect(() => { localStorage.setItem('custom_categories', JSON.stringify(categories)); }, [categories]);
 
-  // Manejo de PIN de seguridad
   const handleSetPin = (pinValue: string) => {
     if (pinValue.length === 4) {
       localStorage.setItem('app_pin', pinValue);
@@ -194,7 +191,6 @@ export default function App() {
   const cancelEdit = () => { setEditingId(null); setDesc(''); setAmount(''); };
   const deleteTx = (id: string) => { if (editingId === id) cancelEdit(); setTxs(txs.filter(t => t.id !== id)); };
 
-  // Crear categoría personalizada
   const handleAddCategory = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCatName.trim()) return;
@@ -366,19 +362,17 @@ export default function App() {
   const prevMonthTotalExpense = prevMonthName ? annualSummary.find(s => s.month === prevMonthName)?.expense || 0 : 0;
   const expenseDiffPercent = prevMonthTotalExpense > 0 ? ((totalGastosMes - prevMonthTotalExpense) / prevMonthTotalExpense) * 100 : 0;
 
-  // Comprobador inteligente de alerta de vencimiento (calcula días restantes respecto al día actual del mes)
   const todayDay = new Date().getDate();
   const getDebtAlert = (dueDateStr: string) => {
     if (dueDateStr.includes('Fin')) return false;
     const matchDay = parseInt(dueDateStr.split(' ')[0], 10);
     if (!isNaN(matchDay)) {
       const diff = matchDay - todayDay;
-      return diff >= 0 && diff <= 3; // Alerta si faltan 3 días o menos
+      return diff >= 0 && diff <= 3;
     }
     return false;
   };
 
-  // Pantalla de bloqueo si hay PIN configurado
   if (isLocked && savedPin) {
     return (
       <div className={`min-h-screen flex items-center justify-center p-4 font-sans ${darkMode ? 'bg-gray-950 text-white' : 'bg-gray-100 text-gray-900'}`}>
@@ -440,7 +434,6 @@ export default function App() {
           </div>
         </div>
 
-        {/* Pestañas de Navegación (incluyendo Ajustes / Seguridad) */}
         <div className="grid grid-cols-5 gap-1.5 mb-3">
           <button
             onClick={() => setActiveTab('budget')}
@@ -867,7 +860,6 @@ export default function App() {
           </>
         ) : (
           <>
-            {/* Pestaña de Ajustes: Seguridad PIN y Categorías Personalizadas */}
             <div className={`p-4 rounded-2xl shadow-sm border mb-4 transition-colors ${darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`}>
               <h2 className="text-sm font-bold mb-1">🔒 Seguridad y Bloqueo por PIN</h2>
               <p className="text-[11px] opacity-60 mb-3">Protege tu información financiera con un PIN de 4 dígitos.</p>
@@ -939,6 +931,7 @@ export default function App() {
           </>
         )}
 
+        {/* MODAL DE DETALLES ACTUALIZADO CON BOTONES DE PAGO Y ESTADOS */}
         {modalType && (
           <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-3 z-50">
             <div className={`rounded-2xl p-4 max-w-sm w-full shadow-2xl flex flex-col max-h-[80vh] border transition-colors ${darkMode ? 'bg-gray-900 border-gray-800 text-white' : 'bg-white border-gray-100 text-gray-900'}`}>
@@ -959,12 +952,27 @@ export default function App() {
                   <p className="text-center opacity-40 py-6">No hay registros en esta categoría.</p>
                 ) : (
                   getModalTransactions().map(item => (
-                    <div key={item.id} className="py-2.5 flex justify-between items-center">
-                      <div>
-                        <p className="text-[10px] font-bold opacity-50 uppercase">{item.category}</p>
-                        <p className="font-medium">{item.desc}</p>
+                    <div key={item.id} className="py-3 flex justify-between items-center gap-2">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          {modalType !== 'Ingresos' && (
+                            <button
+                              type="button"
+                              onClick={() => togglePaidStatus(item.id)}
+                              className={`px-2 py-0.5 rounded-full text-[10px] font-bold border transition-all ${
+                                item.paid 
+                                  ? 'bg-emerald-600 text-white border-emerald-600' 
+                                  : darkMode ? 'bg-gray-800 text-gray-400 border-gray-700' : 'bg-gray-100 text-gray-500 border-gray-200'
+                              }`}
+                            >
+                              {item.paid ? '✓ Pagado' : 'Pendiente'}
+                            </button>
+                          )}
+                          <span className={`text-[10px] font-bold opacity-50 uppercase ${item.paid ? 'line-through' : ''}`}>{item.category}</span>
+                        </div>
+                        <p className={`font-medium ${item.paid ? 'line-through opacity-50' : ''}`}>{item.desc}</p>
                       </div>
-                      <span className={`font-bold ${item.type === 'income' ? 'text-green-500' : 'text-red-500'}`}>
+                      <span className={`font-bold whitespace-nowrap ${item.type === 'income' ? 'text-green-500' : item.paid ? 'opacity-40 line-through' : 'text-red-500'}`}>
                         {item.type === 'income' ? '+' : '-'}{formatCOP(item.amount)}
                       </span>
                     </div>
