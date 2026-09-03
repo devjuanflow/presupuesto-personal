@@ -336,6 +336,12 @@ export default function App() {
     return [];
   };
 
+  // Cálculo de totales específicos para la ventana flotante de detalles (Bruto, Pagado y Pendiente)
+  const modalItems = getModalTransactions();
+  const modalTotalBruto = modalItems.reduce((acc, item) => acc + item.amount, 0);
+  const modalTotalPagado = modalItems.filter(item => item.paid).reduce((acc, item) => acc + item.amount, 0);
+  const modalTotalPendiente = modalItems.filter(item => !item.paid).reduce((acc, item) => acc + item.amount, 0);
+
   const totalHistoricoAhorros = txs.filter(t => t.category === 'Ahorro').reduce((acc, t) => acc + t.amount, 0);
   const totalHistoricoEmergencia = txs.filter(t => t.category === 'Fondo de emergencia').reduce((acc, t) => acc + t.amount, 0);
   const totalDeudaReal = debts.reduce((acc, d) => acc + d.totalAmount, 0);
@@ -931,7 +937,6 @@ export default function App() {
           </>
         )}
 
-        {/* MODAL DE DETALLES ACTUALIZADO CON BOTONES DE PAGO Y ESTADOS */}
         {modalType && (
           <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-3 z-50">
             <div className={`rounded-2xl p-4 max-w-sm w-full shadow-2xl flex flex-col max-h-[80vh] border transition-colors ${darkMode ? 'bg-gray-900 border-gray-800 text-white' : 'bg-white border-gray-100 text-gray-900'}`}>
@@ -948,10 +953,10 @@ export default function App() {
               </div>
 
               <div className={`overflow-y-auto flex-1 divide-y text-xs ${darkMode ? 'divide-gray-800' : 'divide-gray-100'}`}>
-                {getModalTransactions().length === 0 ? (
+                {modalItems.length === 0 ? (
                   <p className="text-center opacity-40 py-6">No hay registros en esta categoría.</p>
                 ) : (
-                  getModalTransactions().map(item => (
+                  modalItems.map(item => (
                     <div key={item.id} className="py-3 flex justify-between items-center gap-2">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
@@ -980,15 +985,24 @@ export default function App() {
                 )}
               </div>
 
-              <div className={`mt-3 pt-3 border-t flex justify-between items-center text-xs ${darkMode ? 'border-gray-800' : 'border-gray-100'}`}>
-                <span className="font-semibold opacity-60">Total:</span>
-                <span className="font-bold text-sm">
-                  {formatCOP(
-                    modalType === 'Ingresos' ? totalIncome :
-                    modalType === 'Gastos' ? totalGastosMes :
-                    modalType === 'Ahorros' ? totalAhorrosMes : totalDeudasMes
-                  )}
-                </span>
+              {/* Pie del modal con desglose dinámico: Total, Pagado y Pendiente */}
+              <div className={`mt-3 pt-3 border-t flex flex-col gap-1.5 text-xs ${darkMode ? 'border-gray-800' : 'border-gray-100'}`}>
+                <div className="flex justify-between items-center">
+                  <span className="opacity-60">Total Bruto:</span>
+                  <span className="font-bold">{formatCOP(modalTotalBruto)}</span>
+                </div>
+                {modalType !== 'Ingresos' && (
+                  <>
+                    <div className="flex justify-between items-center text-emerald-500">
+                      <span>✓ Ya Pagado:</span>
+                      <span className="font-bold">{formatCOP(modalTotalPagado)}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-orange-500">
+                      <span>⏳ Pendiente:</span>
+                      <span className="font-bold">{formatCOP(modalTotalPendiente)}</span>
+                    </div>
+                  </>
+                )}
               </div>
 
               <button
