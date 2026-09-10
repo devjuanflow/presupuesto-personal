@@ -75,13 +75,11 @@ export default function App() {
   const [enteredPin, setEnteredPin] = useState('');
   const [isLocked, setIsLocked] = useState(() => !!localStorage.getItem('app_pin'));
   
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'warning' | 'info' } | null>(null);
 
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => {
-      setToastMessage(null);
-    }, 3000);
+  const showToast = (message: string, type: 'success' | 'warning' | 'info' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3500);
   };
 
   const [categories, setCategories] = useState<CustomCategory[]>(() => {
@@ -162,11 +160,11 @@ export default function App() {
     if (pinValue.length === 4) {
       localStorage.setItem('app_pin', pinValue);
       setSavedPin(pinValue);
-      showToast('🔒 PIN de seguridad configurado con éxito');
+      showToast('PIN de seguridad configurado correctamente', 'success');
     } else {
       localStorage.removeItem('app_pin');
       setSavedPin('');
-      showToast('🔓 PIN desactivado correctamente');
+      showToast('PIN de seguridad desactivado', 'info');
     }
   };
 
@@ -175,9 +173,9 @@ export default function App() {
     if (enteredPin === savedPin) {
       setIsLocked(false);
       setEnteredPin('');
-      showToast('✨ ¡Bienvenido de nuevo!');
+      showToast('Acceso autorizado con éxito', 'success');
     } else {
-      showToast('❌ PIN incorrecto, intenta de nuevo');
+      showToast('PIN incorrecto. Intenta de nuevo', 'warning');
       setEnteredPin('');
     }
   };
@@ -192,10 +190,10 @@ export default function App() {
         ...t, month: currentMonth, category: selectedCat.name, type: selectedCat.type, desc: desc || selectedCat.name, amount: cleanAmount,
       } : t));
       setEditingId(null);
-      showToast('✏️ Movimiento actualizado');
+      showToast('Movimiento actualizado con éxito', 'success');
     } else {
       setTxs([{ id: Date.now().toString(), month: currentMonth, category: selectedCat.name, type: selectedCat.type, desc: desc || selectedCat.name, amount: cleanAmount, paid: false }, ...txs]);
-      showToast('➕ Movimiento añadido con éxito');
+      showToast('Nuevo movimiento registrado', 'success');
     }
     setDesc(''); setAmount(''); setSelectedCat(categories[0]);
   };
@@ -213,27 +211,27 @@ export default function App() {
   };
 
   const cancelEdit = () => { setEditingId(null); setDesc(''); setAmount(''); };
-  const deleteTx = (id: string) => { if (editingId === id) cancelEdit(); setTxs(txs.filter(t => t.id !== id)); showToast('🗑️ Movimiento eliminado'); };
+  const deleteTx = (id: string) => { if (editingId === id) cancelEdit(); setTxs(txs.filter(t => t.id !== id)); showToast('Movimiento eliminado', 'info'); };
 
   const handleAddCategory = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCatName.trim()) return;
     if (categories.some(c => c.name.toLowerCase() === newCatName.trim().toLowerCase())) {
-      showToast('⚠️ Esta categoría ya existe');
+      showToast('Esta categoría ya existe', 'warning');
       return;
     }
     setCategories([...categories, { name: newCatName.trim(), type: newCatType }]);
     setNewCatName('');
-    showToast('🏷️ Categoría creada con éxito');
+    showToast('Categoría creada exitosamente', 'success');
   };
 
   const handleDeleteCategory = (catName: string) => {
     if (categories.length <= 2) {
-      showToast('⚠️ Debes mantener al menos algunas categorías');
+      showToast('Debes conservar un mínimo de categorías', 'warning');
       return;
     }
     setCategories(categories.filter(c => c.name !== catName));
-    showToast('🗑️ Categoría eliminada');
+    showToast('Categoría eliminada', 'info');
   };
 
   const handleGoalSubmit = (e: React.FormEvent) => {
@@ -245,10 +243,10 @@ export default function App() {
     if (editingGoalId) {
       setGoals(goals.map(g => g.id === editingGoalId ? { ...g, name: newGoalName, targetAmount: target, currentAmount: current } : g));
       setEditingGoalId(null);
-      showToast('🎯 Meta actualizada');
+      showToast('Meta de ahorro actualizada', 'success');
     } else {
       setGoals([...goals, { id: Date.now().toString(), name: newGoalName, targetAmount: target, currentAmount: current }]);
-      showToast('🎯 Nueva meta creada');
+      showToast('Nueva meta de ahorro creada', 'success');
     }
     setNewGoalName(''); setNewGoalTarget(''); setNewGoalCurrent('');
   };
@@ -260,7 +258,7 @@ export default function App() {
     setNewGoalCurrent(formatInputCurrency(goal.currentAmount.toString()));
   };
   const cancelGoalEdit = () => { setEditingGoalId(null); setNewGoalName(''); setNewGoalTarget(''); setNewGoalCurrent(''); };
-  const deleteGoal = (id: string) => { if (editingGoalId === id) cancelGoalEdit(); setGoals(goals.filter(g => g.id !== id)); showToast('🗑️ Meta eliminada'); };
+  const deleteGoal = (id: string) => { if (editingGoalId === id) cancelGoalEdit(); setGoals(goals.filter(g => g.id !== id)); showToast('Meta eliminada', 'info'); };
 
   const handleDebtSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -273,10 +271,10 @@ export default function App() {
     if (editingDebtId) {
       setDebts(debts.map(d => d.id === editingDebtId ? { ...d, name: newDebtName, totalAmount: total, paidAmount: paid, monthlyPayment: monthly, totalInstallments: newDebtTotalInst, paidInstallments: newDebtPaidInst, dueDate: newDebtDueDate } : d));
       setEditingDebtId(null);
-      showToast('💳 Deuda actualizada');
+      showToast('Deuda actualizada correctamente', 'success');
     } else {
       setDebts([...debts, { id: Date.now().toString(), name: newDebtName, totalAmount: total, paidAmount: paid, monthlyPayment: monthly, totalInstallments: newDebtTotalInst, paidInstallments: newDebtPaidInst, dueDate: newDebtDueDate }]);
-      showToast('💳 Deuda registrada con éxito');
+      showToast('Deuda registrada exitosamente', 'success');
     }
     setNewDebtName(''); setNewDebtTotal(''); setNewDebtPaid(''); setNewDebtMonthly(''); setNewDebtTotalInst(12); setNewDebtPaidInst(0); setNewDebtDueDate(DUE_DATE_OPTIONS[3]);
   };
@@ -292,18 +290,18 @@ export default function App() {
     setNewDebtDueDate(debt.dueDate);
   };
   const cancelDebtEdit = () => { setEditingDebtId(null); setNewDebtName(''); setNewDebtTotal(''); setNewDebtPaid(''); setNewDebtMonthly(''); setNewDebtTotalInst(12); setNewDebtPaidInst(0); setNewDebtDueDate(DUE_DATE_OPTIONS[3]); };
-  const deleteDebt = (id: string) => { if (editingDebtId === id) cancelDebtEdit(); setDebts(debts.filter(d => d.id !== id)); showToast('🗑️ Deuda eliminada'); };
+  const deleteDebt = (id: string) => { if (editingDebtId === id) cancelDebtEdit(); setDebts(debts.filter(d => d.id !== id)); showToast('Deuda eliminada', 'info'); };
 
   const exportData = () => {
     const backup = { budgetName, budgetDate, txs, goals, debts, categories };
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backup, null, 2));
     const downloadAnchor = document.createElement('a');
     downloadAnchor.setAttribute("href", dataStr);
-    downloadAnchor.setAttribute("download", `presupuesto_${budgetName.replace(/\s+/g, '_')}.json`);
+    downloadAnchor.setAttribute("download", `presupuesto_ultra_${budgetName.replace(/\s+/g, '_')}.json`);
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
-    showToast('📥 Respaldo descargado con éxito');
+    showToast('Copia de respaldo generada', 'success');
   };
 
   const importData = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -323,8 +321,8 @@ export default function App() {
             if (parsedData.budgetName) setBudgetName(parsedData.budgetName);
             if (parsedData.budgetDate) setBudgetDate(parsedData.budgetDate);
           }
-          showToast('📂 ¡Datos restaurados con éxito!');
-        } catch { showToast('❌ Error al leer el archivo'); }
+          showToast('Datos restaurados con éxito', 'success');
+        } catch { showToast('Error al procesar el archivo', 'warning'); }
       };
     }
   };
@@ -415,7 +413,7 @@ export default function App() {
   const grandAnnualDebts = annualSummary.reduce((acc, cur) => acc + cur.debts, 0);
   const grandAnnualNet = annualSummary.reduce((acc, cur) => acc + cur.net, 0);
 
-  const maxAnnualVal = Math.max(...annualSummary.map(s => Math.max(s.income, s.expense)), 1);
+  const maxChartValue = Math.max(...annualSummary.map(s => Math.max(s.income, s.expense)), 1000);
 
   const currentMonthIndex = MONTHS.indexOf(currentMonth);
   const prevMonthName = currentMonthIndex > 0 ? MONTHS[currentMonthIndex - 1] : null;
@@ -436,10 +434,10 @@ export default function App() {
   if (isLocked && savedPin) {
     return (
       <div className={`min-h-screen flex items-center justify-center p-4 font-sans ${darkMode ? 'bg-slate-950 text-white' : 'bg-slate-100 text-slate-900'}`}>
-        <div className={`p-8 rounded-3xl shadow-2xl max-w-sm w-full border backdrop-blur-xl text-center animate-fadeIn ${darkMode ? 'bg-slate-900/80 border-slate-800' : 'bg-white/80 border-slate-200'}`}>
-          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-3xl shadow-lg shadow-indigo-500/30">🔒</div>
-          <h2 className="text-xl font-bold mb-1 tracking-tight">Acceso Seguro</h2>
-          <p className="text-xs opacity-60 mb-6 font-medium">Ingresa tu PIN de 4 dígitos para gestionar tus finanzas.</p>
+        <div className={`p-8 rounded-3xl shadow-2xl max-w-sm w-full border backdrop-blur-2xl text-center animate-fadeIn ${darkMode ? 'bg-slate-900/90 border-slate-800' : 'bg-white/90 border-slate-200'}`}>
+          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-3xl shadow-xl shadow-indigo-500/20">🔒</div>
+          <h2 className="text-xl font-extrabold mb-1 tracking-tight">Seguridad Activa</h2>
+          <p className="text-xs opacity-60 mb-6 font-medium">Introduce tu PIN de 4 dígitos para acceder.</p>
           <form onSubmit={handleUnlock} className="flex flex-col gap-4">
             <input
               type="password"
@@ -448,11 +446,11 @@ export default function App() {
               placeholder="••••"
               value={enteredPin}
               onChange={e => setEnteredPin(e.target.value)}
-              className={`p-4 text-center text-3xl tracking-widest border rounded-2xl outline-none font-bold transition-all ${darkMode ? 'bg-slate-800/50 border-slate-700 text-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20' : 'bg-slate-50 border-slate-200 text-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20'}`}
+              className={`p-4 text-center text-3xl tracking-widest border rounded-2xl outline-none font-bold transition-all ${darkMode ? 'bg-slate-800/60 border-slate-700 text-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20' : 'bg-slate-50 border-slate-200 text-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20'}`}
               autoFocus
             />
             <button type="submit" className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3.5 rounded-2xl font-bold text-sm shadow-lg shadow-indigo-600/30 active:scale-95 transition-all">
-              Desbloquear App
+              Desbloquear Sistema
             </button>
           </form>
         </div>
@@ -463,22 +461,26 @@ export default function App() {
   return (
     <div className={`min-h-screen font-sans relative pb-16 transition-colors duration-500 ${darkMode ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
       
-      {toastMessage && (
-        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-2xl border border-slate-800 text-xs font-bold flex items-center gap-2 animate-bounce">
-          <span>{toastMessage}</span>
+      {toast && (
+        <div className={`fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 px-5 py-3 rounded-2xl shadow-2xl border text-xs font-bold flex items-center gap-2.5 animate-fadeIn backdrop-blur-xl ${
+          toast.type === 'success' ? 'bg-emerald-950/90 border-emerald-800 text-emerald-200' :
+          toast.type === 'warning' ? 'bg-amber-950/90 border-amber-800 text-amber-200' : 'bg-slate-900/90 border-slate-800 text-slate-200'
+        }`}>
+          <span>{toast.type === 'success' ? '✅' : toast.type === 'warning' ? '⚠️' : 'ℹ️'}</span>
+          <span>{toast.message}</span>
         </div>
       )}
 
       <div className="max-w-md mx-auto p-3 sm:p-5">
         
-        <div className={`p-4 rounded-3xl shadow-sm mb-4 flex flex-col gap-3 border backdrop-blur-xl transition-all ${darkMode ? 'bg-slate-900/80 border-slate-800/80' : 'bg-white/80 border-slate-200/80'}`}>
+        <div className={`p-4 rounded-3xl shadow-sm mb-4 flex flex-col gap-3 border backdrop-blur-2xl transition-all ${darkMode ? 'bg-slate-900/80 border-slate-800/80' : 'bg-white/80 border-slate-200/80'}`}>
           <div className="flex justify-between items-center">
             <input
               type="text"
               value={budgetName}
               onChange={e => setBudgetName(e.target.value)}
               placeholder="Nombre del Presupuesto"
-              className={`text-lg font-extrabold tracking-tight border-b pb-1 outline-none bg-transparent w-full transition-colors ${darkMode ? 'border-slate-700 text-white focus:border-indigo-500' : 'border-slate-200 text-slate-800 focus:border-indigo-500'}`}
+              className={`text-lg font-black tracking-tight border-b pb-1 outline-none bg-transparent w-full transition-colors ${darkMode ? 'border-slate-700 text-white focus:border-indigo-500' : 'border-slate-200 text-slate-800 focus:border-indigo-500'}`}
             />
             <button
               onClick={() => setDarkMode(!darkMode)}
@@ -503,31 +505,31 @@ export default function App() {
         <div className="grid grid-cols-5 gap-1.5 mb-4 p-1 rounded-2xl bg-slate-200/50 dark:bg-slate-900/50 border border-slate-200/30 dark:border-slate-800/30">
           <button
             onClick={() => setActiveTab('budget')}
-            className={`py-2 px-1 rounded-xl font-bold text-[11px] transition-all ${activeTab === 'budget' ? 'bg-blue-600 text-white shadow-md shadow-blue-500/30' : 'opacity-70 hover:opacity-100'}`}
+            className={`py-2 px-1 rounded-xl font-bold text-[11px] transition-all ${activeTab === 'budget' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/25' : 'opacity-70 hover:opacity-100'}`}
           >
             📊 Presup.
           </button>
           <button
             onClick={() => setActiveTab('savings')}
-            className={`py-2 px-1 rounded-xl font-bold text-[11px] transition-all ${activeTab === 'savings' ? 'bg-emerald-600 text-white shadow-md shadow-emerald-500/30' : 'opacity-70 hover:opacity-100'}`}
+            className={`py-2 px-1 rounded-xl font-bold text-[11px] transition-all ${activeTab === 'savings' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/25' : 'opacity-70 hover:opacity-100'}`}
           >
             🎯 Ahorros
           </button>
           <button
             onClick={() => setActiveTab('debts')}
-            className={`py-2 px-1 rounded-xl font-bold text-[11px] transition-all ${activeTab === 'debts' ? 'bg-orange-600 text-white shadow-md shadow-orange-500/30' : 'opacity-70 hover:opacity-100'}`}
+            className={`py-2 px-1 rounded-xl font-bold text-[11px] transition-all ${activeTab === 'debts' ? 'bg-orange-600 text-white shadow-lg shadow-orange-500/25' : 'opacity-70 hover:opacity-100'}`}
           >
             💳 Deudas
           </button>
           <button
             onClick={() => setActiveTab('annual')}
-            className={`py-2 px-1 rounded-xl font-bold text-[11px] transition-all ${activeTab === 'annual' ? 'bg-purple-600 text-white shadow-md shadow-purple-500/30' : 'opacity-70 hover:opacity-100'}`}
+            className={`py-2 px-1 rounded-xl font-bold text-[11px] transition-all ${activeTab === 'annual' ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/25' : 'opacity-70 hover:opacity-100'}`}
           >
             📈 Anual
           </button>
           <button
             onClick={() => setActiveTab('settings')}
-            className={`py-2 px-1 rounded-xl font-bold text-[11px] transition-all ${activeTab === 'settings' ? 'bg-slate-800 text-white shadow-md shadow-slate-700/30' : 'opacity-70 hover:opacity-100'}`}
+            className={`py-2 px-1 rounded-xl font-bold text-[11px] transition-all ${activeTab === 'settings' ? 'bg-slate-800 text-white shadow-lg shadow-slate-700/25' : 'opacity-70 hover:opacity-100'}`}
           >
             ⚙️ Ajustes
           </button>
@@ -877,7 +879,7 @@ export default function App() {
                         const nextInst = Math.min(debt.totalInstallments, debt.paidInstallments + 1);
                         const nextAmt = Math.min(debt.totalAmount, debt.paidAmount + debt.monthlyPayment);
                         setDebts(debts.map(d => d.id === debt.id ? { ...d, paidAmount: nextAmt, paidInstallments: nextInst } : d));
-                        showToast('💳 ¡Cuota pagada con éxito!');
+                        showToast('Cuota registrada con éxito', 'success');
                       }} className={`px-3 py-2 rounded-xl font-bold text-xs active:scale-95 transition-all shadow-sm ${darkMode ? 'bg-slate-100 text-slate-900 hover:bg-white' : 'bg-slate-900 text-white hover:bg-slate-800'}`}>+ Pagar Cuota</button>
                     </div>
                   </div>
@@ -900,31 +902,40 @@ export default function App() {
               <div className={`p-4 rounded-2xl text-center border mt-3 ${darkMode ? 'bg-indigo-950/20 border-indigo-900/40' : 'bg-indigo-50/60 border-indigo-100'}`}><p className="text-[10px] opacity-60 font-bold uppercase tracking-wider">Neto Anual</p><p className={`text-sm font-black mt-1 ${grandAnnualNet >= 0 ? 'text-indigo-400' : 'text-red-400'}`}>{formatCOP(grandAnnualNet)}</p></div>
             </div>
 
-            {/* Gráfico visual interactivo CSS de barras mensuales */}
+            {/* Gráfico SVG interactivo Ultra Premium */}
             <div className={`p-5 rounded-3xl shadow-sm border mb-4 transition-colors ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
-              <h3 className="text-xs font-bold uppercase tracking-wider opacity-70 mb-4">📈 Comparativa Gráfica Mensual</h3>
-              <div className="space-y-3">
-                {annualSummary.map(row => {
-                  const incWidth = (row.income / maxAnnualVal) * 100;
-                  const expWidth = (row.expense / maxAnnualVal) * 100;
-                  if (row.income === 0 && row.expense === 0) return null;
-                  return (
-                    <div key={row.month} className="text-xs">
-                      <div className="flex justify-between font-bold mb-1">
-                        <span>{row.month}</span>
-                        <span className="opacity-60 text-[10px]">Neto: <span className={row.net >= 0 ? 'text-indigo-400' : 'text-red-400'}>{formatCOP(row.net)}</span></span>
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden flex">
-                          <div className="bg-emerald-500 h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(100, incWidth)}%` }} title={`Ingresos: ${formatCOP(row.income)}`}></div>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xs font-bold uppercase tracking-wider opacity-70">📈 Historial Gráfico Anual</h3>
+                <div className="flex items-center gap-3 text-[10px] font-bold">
+                  <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span> Ingresos</span>
+                  <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-red-500 inline-block"></span> Gastos</span>
+                </div>
+              </div>
+
+              <div className="w-full overflow-x-auto pb-2">
+                <div className="min-w-[480px] h-48 flex items-end gap-2 pt-6 px-2 border-b border-slate-200 dark:border-slate-800">
+                  {annualSummary.map(row => {
+                    const incHeight = maxChartValue > 0 ? (row.income / maxChartValue) * 140 : 0;
+                    const expHeight = maxChartValue > 0 ? (row.expense / maxChartValue) * 140 : 0;
+                    return (
+                      <div key={row.month} className="flex-1 flex flex-col items-center gap-1 h-full justify-end group relative">
+                        <div className="w-full flex items-end justify-center gap-1 h-36">
+                          <div 
+                            className="w-2.5 bg-emerald-500 rounded-t-lg transition-all duration-500 hover:brightness-125" 
+                            style={{ height: `${Math.max(4, incHeight)}px` }}
+                            title={`${row.month} Ingresos: ${formatCOP(row.income)}`}
+                          ></div>
+                          <div 
+                            className="w-2.5 bg-red-500 rounded-t-lg transition-all duration-500 hover:brightness-125" 
+                            style={{ height: `${Math.max(4, expHeight)}px` }}
+                            title={`${row.month} Gastos: ${formatCOP(row.expense)}`}
+                          ></div>
                         </div>
-                        <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden flex">
-                          <div className="bg-red-500 h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(100, expWidth)}%` }} title={`Gastos: ${formatCOP(row.expense)}`}></div>
-                        </div>
+                        <span className="text-[10px] font-bold opacity-60 mt-1 truncate w-full text-center">{row.month.slice(0, 3)}</span>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </>
