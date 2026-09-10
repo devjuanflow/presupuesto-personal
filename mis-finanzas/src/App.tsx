@@ -137,7 +137,6 @@ export default function App() {
   useEffect(() => { localStorage.setItem('dark_mode', String(darkMode)); }, [darkMode]);
   useEffect(() => { localStorage.setItem('custom_categories', JSON.stringify(categories)); }, [categories]);
 
-  // Utilidad para formatear números mientras se escriben en inputs
   const formatInputCurrency = (value: string) => {
     const cleanNum = value.replace(/\D/g, '');
     if (!cleanNum) return '';
@@ -314,7 +313,6 @@ export default function App() {
 
   const formatCOP = (val: number) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(val);
 
-  // Cálculos memorizados para mejor rendimiento
   const { monthTxs, totalIncome, totalGastosMes, totalAhorrosMes, totalDeudasMes, totalPagadoMes, totalPendienteMes, balance, porcentajeAFavor, expenseCategoriesBreakdown, filteredMonthTxs } = useMemo(() => {
     const mTxs = txs.filter(t => t.month === currentMonth);
     const tInc = mTxs.filter(t => t.type === 'income').reduce((acc, t) => acc + t.amount, 0);
