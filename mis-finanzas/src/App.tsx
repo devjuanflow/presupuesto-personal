@@ -656,7 +656,7 @@ export default function App() {
                       </tr>
                     )}
                     {filteredMonthTxs.map(t => (
-                      <tr key={t.id} className={`transition-colors ${darkMode ? 'hover:bg-gray-800/50' : 'hover:bg-gray-50'} ${t.paid ? (darkMode ? 'bg-emerald-950/20' : 'bg-emerald-50/40') : ''}`}>
+                      <tr key={t.id} className={`transition-all duration-200 ${darkMode ? 'hover:bg-gray-800/50' : 'hover:bg-gray-50'} ${t.paid ? (darkMode ? 'bg-emerald-950/20' : 'bg-emerald-50/40') : ''}`}>
                         <td className="p-3">
                           <div className="flex items-center gap-2 mb-0.5">
                             <button
