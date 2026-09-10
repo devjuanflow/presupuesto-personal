@@ -74,6 +74,15 @@ export default function App() {
   const [savedPin, setSavedPin] = useState(() => localStorage.getItem('app_pin') || '');
   const [enteredPin, setEnteredPin] = useState('');
   const [isLocked, setIsLocked] = useState(() => !!localStorage.getItem('app_pin'));
+  
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => {
+      setToastMessage(null);
+    }, 3000);
+  };
 
   const [categories, setCategories] = useState<CustomCategory[]>(() => {
     const saved = localStorage.getItem('custom_categories');
@@ -153,11 +162,11 @@ export default function App() {
     if (pinValue.length === 4) {
       localStorage.setItem('app_pin', pinValue);
       setSavedPin(pinValue);
-      alert('¡PIN de seguridad configurado con éxito!');
+      showToast('🔒 PIN de seguridad configurado con éxito');
     } else {
       localStorage.removeItem('app_pin');
       setSavedPin('');
-      alert('PIN desactivado.');
+      showToast('🔓 PIN desactivado correctamente');
     }
   };
 
@@ -166,8 +175,9 @@ export default function App() {
     if (enteredPin === savedPin) {
       setIsLocked(false);
       setEnteredPin('');
+      showToast('✨ ¡Bienvenido de nuevo!');
     } else {
-      alert('PIN incorrecto');
+      showToast('❌ PIN incorrecto, intenta de nuevo');
       setEnteredPin('');
     }
   };
@@ -182,8 +192,10 @@ export default function App() {
         ...t, month: currentMonth, category: selectedCat.name, type: selectedCat.type, desc: desc || selectedCat.name, amount: cleanAmount,
       } : t));
       setEditingId(null);
+      showToast('✏️ Movimiento actualizado');
     } else {
       setTxs([{ id: Date.now().toString(), month: currentMonth, category: selectedCat.name, type: selectedCat.type, desc: desc || selectedCat.name, amount: cleanAmount, paid: false }, ...txs]);
+      showToast('➕ Movimiento añadido con éxito');
     }
     setDesc(''); setAmount(''); setSelectedCat(categories[0]);
   };
@@ -201,26 +213,27 @@ export default function App() {
   };
 
   const cancelEdit = () => { setEditingId(null); setDesc(''); setAmount(''); };
-  const deleteTx = (id: string) => { if (editingId === id) cancelEdit(); setTxs(txs.filter(t => t.id !== id)); };
+  const deleteTx = (id: string) => { if (editingId === id) cancelEdit(); setTxs(txs.filter(t => t.id !== id)); showToast('🗑️ Movimiento eliminado'); };
 
   const handleAddCategory = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCatName.trim()) return;
     if (categories.some(c => c.name.toLowerCase() === newCatName.trim().toLowerCase())) {
-      alert('Esta categoría ya existe.');
+      showToast('⚠️ Esta categoría ya existe');
       return;
     }
     setCategories([...categories, { name: newCatName.trim(), type: newCatType }]);
     setNewCatName('');
-    alert('¡Categoría creada con éxito!');
+    showToast('🏷️ Categoría creada con éxito');
   };
 
   const handleDeleteCategory = (catName: string) => {
     if (categories.length <= 2) {
-      alert('Debes mantener al menos algunas categorías.');
+      showToast('⚠️ Debes mantener al menos algunas categorías');
       return;
     }
     setCategories(categories.filter(c => c.name !== catName));
+    showToast('🗑️ Categoría eliminada');
   };
 
   const handleGoalSubmit = (e: React.FormEvent) => {
@@ -232,8 +245,10 @@ export default function App() {
     if (editingGoalId) {
       setGoals(goals.map(g => g.id === editingGoalId ? { ...g, name: newGoalName, targetAmount: target, currentAmount: current } : g));
       setEditingGoalId(null);
+      showToast('🎯 Meta actualizada');
     } else {
       setGoals([...goals, { id: Date.now().toString(), name: newGoalName, targetAmount: target, currentAmount: current }]);
+      showToast('🎯 Nueva meta creada');
     }
     setNewGoalName(''); setNewGoalTarget(''); setNewGoalCurrent('');
   };
@@ -245,7 +260,7 @@ export default function App() {
     setNewGoalCurrent(formatInputCurrency(goal.currentAmount.toString()));
   };
   const cancelGoalEdit = () => { setEditingGoalId(null); setNewGoalName(''); setNewGoalTarget(''); setNewGoalCurrent(''); };
-  const deleteGoal = (id: string) => { if (editingGoalId === id) cancelGoalEdit(); setGoals(goals.filter(g => g.id !== id)); };
+  const deleteGoal = (id: string) => { if (editingGoalId === id) cancelGoalEdit(); setGoals(goals.filter(g => g.id !== id)); showToast('🗑️ Meta eliminada'); };
 
   const handleDebtSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -258,8 +273,10 @@ export default function App() {
     if (editingDebtId) {
       setDebts(debts.map(d => d.id === editingDebtId ? { ...d, name: newDebtName, totalAmount: total, paidAmount: paid, monthlyPayment: monthly, totalInstallments: newDebtTotalInst, paidInstallments: newDebtPaidInst, dueDate: newDebtDueDate } : d));
       setEditingDebtId(null);
+      showToast('💳 Deuda actualizada');
     } else {
       setDebts([...debts, { id: Date.now().toString(), name: newDebtName, totalAmount: total, paidAmount: paid, monthlyPayment: monthly, totalInstallments: newDebtTotalInst, paidInstallments: newDebtPaidInst, dueDate: newDebtDueDate }]);
+      showToast('💳 Deuda registrada con éxito');
     }
     setNewDebtName(''); setNewDebtTotal(''); setNewDebtPaid(''); setNewDebtMonthly(''); setNewDebtTotalInst(12); setNewDebtPaidInst(0); setNewDebtDueDate(DUE_DATE_OPTIONS[3]);
   };
@@ -275,7 +292,7 @@ export default function App() {
     setNewDebtDueDate(debt.dueDate);
   };
   const cancelDebtEdit = () => { setEditingDebtId(null); setNewDebtName(''); setNewDebtTotal(''); setNewDebtPaid(''); setNewDebtMonthly(''); setNewDebtTotalInst(12); setNewDebtPaidInst(0); setNewDebtDueDate(DUE_DATE_OPTIONS[3]); };
-  const deleteDebt = (id: string) => { if (editingDebtId === id) cancelDebtEdit(); setDebts(debts.filter(d => d.id !== id)); };
+  const deleteDebt = (id: string) => { if (editingDebtId === id) cancelDebtEdit(); setDebts(debts.filter(d => d.id !== id)); showToast('🗑️ Deuda eliminada'); };
 
   const exportData = () => {
     const backup = { budgetName, budgetDate, txs, goals, debts, categories };
@@ -286,6 +303,7 @@ export default function App() {
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
+    showToast('📥 Respaldo descargado con éxito');
   };
 
   const importData = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -305,8 +323,8 @@ export default function App() {
             if (parsedData.budgetName) setBudgetName(parsedData.budgetName);
             if (parsedData.budgetDate) setBudgetDate(parsedData.budgetDate);
           }
-          alert('¡Datos cargados con éxito!');
-        } catch { alert('Error al leer el archivo.'); }
+          showToast('📂 ¡Datos restaurados con éxito!');
+        } catch { showToast('❌ Error al leer el archivo'); }
       };
     }
   };
@@ -397,6 +415,8 @@ export default function App() {
   const grandAnnualDebts = annualSummary.reduce((acc, cur) => acc + cur.debts, 0);
   const grandAnnualNet = annualSummary.reduce((acc, cur) => acc + cur.net, 0);
 
+  const maxAnnualVal = Math.max(...annualSummary.map(s => Math.max(s.income, s.expense)), 1);
+
   const currentMonthIndex = MONTHS.indexOf(currentMonth);
   const prevMonthName = currentMonthIndex > 0 ? MONTHS[currentMonthIndex - 1] : null;
   const prevMonthTotalExpense = prevMonthName ? annualSummary.find(s => s.month === prevMonthName)?.expense || 0 : 0;
@@ -416,7 +436,7 @@ export default function App() {
   if (isLocked && savedPin) {
     return (
       <div className={`min-h-screen flex items-center justify-center p-4 font-sans ${darkMode ? 'bg-slate-950 text-white' : 'bg-slate-100 text-slate-900'}`}>
-        <div className={`p-8 rounded-3xl shadow-2xl max-w-sm w-full border backdrop-blur-xl text-center ${darkMode ? 'bg-slate-900/80 border-slate-800' : 'bg-white/80 border-slate-200'}`}>
+        <div className={`p-8 rounded-3xl shadow-2xl max-w-sm w-full border backdrop-blur-xl text-center animate-fadeIn ${darkMode ? 'bg-slate-900/80 border-slate-800' : 'bg-white/80 border-slate-200'}`}>
           <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-3xl shadow-lg shadow-indigo-500/30">🔒</div>
           <h2 className="text-xl font-bold mb-1 tracking-tight">Acceso Seguro</h2>
           <p className="text-xs opacity-60 mb-6 font-medium">Ingresa tu PIN de 4 dígitos para gestionar tus finanzas.</p>
@@ -443,6 +463,12 @@ export default function App() {
   return (
     <div className={`min-h-screen font-sans relative pb-16 transition-colors duration-500 ${darkMode ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
       
+      {toastMessage && (
+        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-2xl border border-slate-800 text-xs font-bold flex items-center gap-2 animate-bounce">
+          <span>{toastMessage}</span>
+        </div>
+      )}
+
       <div className="max-w-md mx-auto p-3 sm:p-5">
         
         <div className={`p-4 rounded-3xl shadow-sm mb-4 flex flex-col gap-3 border backdrop-blur-xl transition-all ${darkMode ? 'bg-slate-900/80 border-slate-800/80' : 'bg-white/80 border-slate-200/80'}`}>
@@ -851,6 +877,7 @@ export default function App() {
                         const nextInst = Math.min(debt.totalInstallments, debt.paidInstallments + 1);
                         const nextAmt = Math.min(debt.totalAmount, debt.paidAmount + debt.monthlyPayment);
                         setDebts(debts.map(d => d.id === debt.id ? { ...d, paidAmount: nextAmt, paidInstallments: nextInst } : d));
+                        showToast('💳 ¡Cuota pagada con éxito!');
                       }} className={`px-3 py-2 rounded-xl font-bold text-xs active:scale-95 transition-all shadow-sm ${darkMode ? 'bg-slate-100 text-slate-900 hover:bg-white' : 'bg-slate-900 text-white hover:bg-slate-800'}`}>+ Pagar Cuota</button>
                     </div>
                   </div>
@@ -873,28 +900,31 @@ export default function App() {
               <div className={`p-4 rounded-2xl text-center border mt-3 ${darkMode ? 'bg-indigo-950/20 border-indigo-900/40' : 'bg-indigo-50/60 border-indigo-100'}`}><p className="text-[10px] opacity-60 font-bold uppercase tracking-wider">Neto Anual</p><p className={`text-sm font-black mt-1 ${grandAnnualNet >= 0 ? 'text-indigo-400' : 'text-red-400'}`}>{formatCOP(grandAnnualNet)}</p></div>
             </div>
 
-            <div className={`rounded-3xl shadow-sm overflow-hidden mb-4 border transition-colors ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse min-w-[320px]">
-                  <thead>
-                    <tr className={`border-b text-[10px] uppercase opacity-60 font-bold ${darkMode ? 'bg-slate-950/60 border-slate-800' : 'bg-slate-50 border-slate-100'}`}>
-                      <th className="p-3.5">Mes</th>
-                      <th className="p-3.5">Ingresos</th>
-                      <th className="p-3.5">Gastos</th>
-                      <th className="p-3.5">Neto</th>
-                    </tr>
-                  </thead>
-                  <tbody className={`divide-y text-xs ${darkMode ? 'divide-slate-800/80' : 'divide-slate-100'}`}>
-                    {annualSummary.map(row => (
-                      <tr key={row.month} className={`transition-colors ${darkMode ? 'hover:bg-slate-800/40' : 'hover:bg-slate-50/80'}`}>
-                        <td className="p-3.5 font-bold">{row.month}</td>
-                        <td className="p-3.5 font-bold text-emerald-500">{formatCOP(row.income)}</td>
-                        <td className="p-3.5 font-bold text-red-500">{formatCOP(row.expense)}</td>
-                        <td className={`p-3.5 font-black ${row.net >= 0 ? 'text-indigo-400' : 'text-red-400'}`}>{formatCOP(row.net)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            {/* Gráfico visual interactivo CSS de barras mensuales */}
+            <div className={`p-5 rounded-3xl shadow-sm border mb-4 transition-colors ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+              <h3 className="text-xs font-bold uppercase tracking-wider opacity-70 mb-4">📈 Comparativa Gráfica Mensual</h3>
+              <div className="space-y-3">
+                {annualSummary.map(row => {
+                  const incWidth = (row.income / maxAnnualVal) * 100;
+                  const expWidth = (row.expense / maxAnnualVal) * 100;
+                  if (row.income === 0 && row.expense === 0) return null;
+                  return (
+                    <div key={row.month} className="text-xs">
+                      <div className="flex justify-between font-bold mb-1">
+                        <span>{row.month}</span>
+                        <span className="opacity-60 text-[10px]">Neto: <span className={row.net >= 0 ? 'text-indigo-400' : 'text-red-400'}>{formatCOP(row.net)}</span></span>
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden flex">
+                          <div className="bg-emerald-500 h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(100, incWidth)}%` }} title={`Ingresos: ${formatCOP(row.income)}`}></div>
+                        </div>
+                        <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden flex">
+                          <div className="bg-red-500 h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(100, expWidth)}%` }} title={`Gastos: ${formatCOP(row.expense)}`}></div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </>
